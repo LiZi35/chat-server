@@ -1,6 +1,7 @@
 import express from "express"
 import session from 'express-session'
 import cors from 'cors'
+import { v4 as uuidv4 } from "uuid"
 import type { user } from "./types/index.ts"
 
 let userList: user[] = [
@@ -39,7 +40,6 @@ app.post('/login', (req, res) => {
             message: "邮箱或密码不能为空"
         })
     }
-    console.log(req.body)
     const targetUser = userList.find(u => u.email === email && u.password === password)
     if (!targetUser){
         return res.status(401).json({
@@ -58,4 +58,38 @@ app.post('/login', (req, res) => {
         id:targetUser.id
     })
 
+})
+
+app.post('/register', (req, res) => {
+    // console.log(req.body)
+    // res.send(null)
+    const { email, password } = req.body || {}
+
+    if (!email || !password) {
+        return res.status(400).json({
+            code: 400,
+            message: "邮箱或密码不能为空"
+        })
+    }
+    const isExist = userList.find(u => u.email === email && u.password === password)
+    if (isExist){
+        return res.status(401).json({
+            code:401,
+            message:"该账号已存在"
+        })
+    }
+    const newUser:user={id:uuidv4(),email:email,password:password}
+
+    userList.push(newUser)
+    console.log(userList)
+    req.session.user={
+        id:newUser.id,
+        email:newUser.email
+    }
+    res.status(201).json({
+        code:201,
+        message:'注册成功',
+        email:newUser.email,
+        id:newUser.id
+    })
 })
