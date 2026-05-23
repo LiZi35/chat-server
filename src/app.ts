@@ -71,7 +71,7 @@ app.post('/register', (req, res) => {
             message: "邮箱或密码不能为空"
         })
     }
-    const isExist = userList.find(u => u.email === email && u.password === password)
+    const isExist = userList.find(u => u.email === email)
     if (isExist){
         return res.status(401).json({
             code:401,
