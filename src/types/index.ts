@@ -6,7 +6,7 @@ export interface user{
 }
 export interface message{
     messageId:number
-    sender:string
-    nickName:string
+    senderId:string
+    senderNickName:string
     content:string
 }

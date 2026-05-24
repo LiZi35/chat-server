@@ -5,12 +5,15 @@ import { createServer } from 'node:http';
 import cors from 'cors'
 import jwt from 'jsonwebtoken'
 import { v4 as uuidv4 } from "uuid"
-import type { user } from "./types/index.ts"
+import type { message, user } from "./types/index.ts"
 
+// todo:数据库
 let userList: user[] = [
     { id: 'a3962166-7b4c-4773-8f4e-00721508d2a2', email: 'test@example.com', password: '123456', nickName: 'admin' }
 ]
-let messageList
+let messagesList: message[] = [
+    {messageId:1,senderId:'a3962166-7b4c-4773-8f4e-00721508d2a2',senderNickName:'admin',content:'hello'}
+]
 
 const PORT = 3000
 const app = express()
@@ -29,10 +32,17 @@ app.use(session({
     }
 }))
 
-
-
 server.listen(PORT, () => {
-    console.log(`server is running`)
+    console.log(`server is running at port ${PORT}`)
+})
+
+io.on('connection',(socket)=>{
+    console.log('connected')
+    socket.emit('messagesList',messagesList)
+    socket.on('getMessages',()=>{
+        console.log('getMessages')
+        socket.emit('Messages',messagesList)
+    })
 })
 
 // 登录
@@ -68,15 +78,16 @@ app.post('/login', (req, res) => {
 
 })
 
+// 注册
 app.post('/register', (req, res) => {
     // console.log(req.body)
     // res.send(null)
     const { email, password, nickName } = req.body || {}
 
-    if (!email || !password || nickName) {
+    if (!email || !password || !nickName) {
         return res.status(400).json({
             code: 400,
-            message: "邮箱或密码不能为空"
+            message: "邮箱、密码或昵称不能为空"
         })
     }
     const isExist = userList.find(u => u.email === email)
