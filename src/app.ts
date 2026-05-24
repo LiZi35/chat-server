@@ -1,15 +1,21 @@
 import express from "express"
 import session from 'express-session'
+import { Server } from "socket.io";
+import { createServer } from 'node:http';
 import cors from 'cors'
+import jwt from 'jsonwebtoken'
 import { v4 as uuidv4 } from "uuid"
 import type { user } from "./types/index.ts"
 
 let userList: user[] = [
-    { id: 'a3962166-7b4c-4773-8f4e-00721508d2a2', email: 'test@example.com', password: '123456' }
+    { id: 'a3962166-7b4c-4773-8f4e-00721508d2a2', email: 'test@example.com', password: '123456', nickName: 'admin' }
 ]
+let messageList
 
 const PORT = 3000
 const app = express()
+const server = createServer(app)
+const io = new Server(server)
 app.use(express.json())
 app.use(cors())
 app.use(session({
@@ -22,13 +28,14 @@ app.use(session({
         httpOnly: true // 核心安全配置：防止前端通过 JS (document.cookie) 盗取 Session ID
     }
 }))
-    
-    
 
-app.listen(PORT, () => {
+
+
+server.listen(PORT, () => {
     console.log(`server is running`)
 })
 
+// 登录
 app.post('/login', (req, res) => {
     // console.log(req.body)
     // res.send(null)
@@ -41,21 +48,22 @@ app.post('/login', (req, res) => {
         })
     }
     const targetUser = userList.find(u => u.email === email && u.password === password)
-    if (!targetUser){
+    if (!targetUser) {
         return res.status(401).json({
-            code:401,
-            message:"邮箱或密码错误"
+            code: 401,
+            message: "邮箱或密码错误"
         })
     }
-    req.session.user={
-        id:targetUser.id,
-        email:targetUser.email
+    req.session.user = {
+        id: targetUser.id,
+        email: targetUser.email,
+        nickName: targetUser.nickName
     }
     res.json({
-        code:200,
-        message:'登录成功',
-        email:targetUser.email,
-        id:targetUser.id
+        code: 200,
+        message: '登录成功',
+        email: targetUser.email,
+        id: targetUser.id
     })
 
 })
@@ -63,33 +71,35 @@ app.post('/login', (req, res) => {
 app.post('/register', (req, res) => {
     // console.log(req.body)
     // res.send(null)
-    const { email, password } = req.body || {}
+    const { email, password, nickName } = req.body || {}
 
-    if (!email || !password) {
+    if (!email || !password || nickName) {
         return res.status(400).json({
             code: 400,
             message: "邮箱或密码不能为空"
         })
     }
     const isExist = userList.find(u => u.email === email)
-    if (isExist){
+    if (isExist) {
         return res.status(401).json({
-            code:401,
-            message:"该账号已存在"
+            code: 401,
+            message: "该账号已存在"
         })
     }
-    const newUser:user={id:uuidv4(),email:email,password:password}
+    const newUser: user = { id: uuidv4(), email: email, password: password, nickName: nickName }
 
     userList.push(newUser)
     console.log(userList)
-    req.session.user={
-        id:newUser.id,
-        email:newUser.email
+    req.session.user = {
+        id: newUser.id,
+        email: newUser.email,
+        nickName: nickName
     }
     res.status(201).json({
-        code:201,
-        message:'注册成功',
-        email:newUser.email,
-        id:newUser.id
+        code: 201,
+        message: '注册成功',
+        email: newUser.email,
+        id: newUser.id,
+        nickName: newUser.nickName
     })
 })
