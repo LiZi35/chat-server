@@ -2,11 +2,11 @@ export interface user{
     id:string
     email:string
     password:string
-    nickName:string
+    nickname:string
 }
 export interface message{
     messageId:number
     senderId:string
-    senderNickName:string
+    senderNickname:string
     content:string
 }

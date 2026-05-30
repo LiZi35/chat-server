@@ -5,7 +5,7 @@ declare module 'express-session' {
     user?: {
       id: string;
       email: string;
-      nickName: string;
+      nickname: string;
     };
   }
 }

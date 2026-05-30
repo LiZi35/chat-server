@@ -1,19 +1,19 @@
 import express from "express"
 import session from 'express-session'
+import cookieParser from 'cookie-parser'
 import { Server } from "socket.io";
 import { createServer } from 'node:http';
 import cors from 'cors'
 import jwt from 'jsonwebtoken'
 import { v4 as uuidv4 } from "uuid"
 import type { message, user } from "./types/index.ts"
-import ms from 'ms'
 
 // todo:数据库
 let userList: user[] = [
-    { id: 'a3962166-7b4c-4773-8f4e-00721508d2a2', email: 'test@example.com', password: '123456', nickName: 'admin' }
+    { id: 'a3962166-7b4c-4773-8f4e-00721508d2a2', email: 'test@example.com', password: '123456', nickname: 'admin' }
 ]
 let messagesList: message[] = [
-    { messageId: 1, senderId: 'a3962166-7b4c-4773-8f4e-00721508d2a2', senderNickName: 'admin', content: 'hello' }
+    { messageId: 1, senderId: 'a3962166-7b4c-4773-8f4e-00721508d2a2', senderNickname: 'admin', content: 'hello' }
 ]
 
 const PORT = 3000
@@ -23,6 +23,7 @@ const server = createServer(app)
 const io = new Server(server)
 app.use(express.json())
 app.use(cors())
+app.use(cookieParser())
 app.use(session({
     secret: 'cf5787de-4e14-4923-9c0c-fe987025eea5',
     resave: false, // 是否每次请求都重新保存 Session（设为 false 提高性能）
@@ -71,15 +72,20 @@ app.post('/login', (req, res) => {
         id: targetUser.id,
         email: targetUser.email,
     }, SETCRT, {
-        expiresIn:ms('7d')
+        expiresIn:"7 days"
     })
 
     req.session.user = {
         id: targetUser.id,
         email: targetUser.email,
-        nickName: targetUser.nickName
+        nickname: targetUser.nickname
     }
-    res.json({
+
+    res.cookie('token',token,{
+        httpOnly:true,
+        sameSite:'lax',
+        maxAge:1000 * 60 * 60 * 24 * 7 // 7d
+    }).json({
         code: 200,
         message: '登录成功',
         token: token,
@@ -93,9 +99,9 @@ app.post('/login', (req, res) => {
 app.post('/register', (req, res) => {
     // console.log(req.body)
     // res.send(null)
-    const { email, password, nickName } = req.body || {}
+    const { email, password, nickname } = req.body || {}
 
-    if (!email || !password || !nickName) {
+    if (!email || !password || !nickname) {
         return res.status(400).json({
             code: 400,
             message: "邮箱、密码或昵称不能为空"
@@ -112,7 +118,7 @@ app.post('/register', (req, res) => {
         id: uuidv4(),
         email: email,
         password: password,
-        nickName: nickName
+        nickname: nickname
     }
 
     userList.push(newUser)
@@ -122,7 +128,7 @@ app.post('/register', (req, res) => {
     req.session.user = {
         id: newUser.id,
         email: newUser.email,
-        nickName: nickName
+        nickname: nickname
     }
 
     // jwt签名
@@ -130,15 +136,19 @@ app.post('/register', (req, res) => {
         id: newUser.id,
         email: newUser.email,
     }, SETCRT, {
-        expiresIn:ms('7d')
+        expiresIn:"7 days"
     })
 
-    res.status(201).json({
+    res.cookie('token',token,{
+        httpOnly:true,
+        sameSite:'lax',
+        maxAge:1000 * 60 * 60 * 24 * 7 // 7d
+    }).status(201).json({
         code: 201,
         message: '注册成功',
         token: token,
         email: newUser.email,
         id: newUser.id,
-        nickName: newUser.nickName
+        nickname: newUser.nickname
     })
 })
