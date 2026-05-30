@@ -6,16 +6,18 @@ import cors from 'cors'
 import jwt from 'jsonwebtoken'
 import { v4 as uuidv4 } from "uuid"
 import type { message, user } from "./types/index.ts"
+import ms from 'ms'
 
 // todo:数据库
 let userList: user[] = [
     { id: 'a3962166-7b4c-4773-8f4e-00721508d2a2', email: 'test@example.com', password: '123456', nickName: 'admin' }
 ]
 let messagesList: message[] = [
-    {messageId:1,senderId:'a3962166-7b4c-4773-8f4e-00721508d2a2',senderNickName:'admin',content:'hello'}
+    { messageId: 1, senderId: 'a3962166-7b4c-4773-8f4e-00721508d2a2', senderNickName: 'admin', content: 'hello' }
 ]
 
 const PORT = 3000
+const SETCRT = ' vjndjsgioehnrfowjr39j'
 const app = express()
 const server = createServer(app)
 const io = new Server(server)
@@ -36,12 +38,11 @@ server.listen(PORT, () => {
     console.log(`server is running at port ${PORT}`)
 })
 
-io.on('connection',(socket)=>{
+io.on('connection', (socket) => {
     console.log('connected')
-    socket.emit('messagesList',messagesList)
-    socket.on('getMessages',()=>{
+    socket.on('getMessages', () => {
         console.log('getMessages')
-        socket.emit('Messages',messagesList)
+        socket.emit('messagesList', messagesList)
     })
 })
 
@@ -64,6 +65,15 @@ app.post('/login', (req, res) => {
             message: "邮箱或密码错误"
         })
     }
+
+    // jwt签名
+    const token = jwt.sign({
+        id: targetUser.id,
+        email: targetUser.email,
+    }, SETCRT, {
+        expiresIn:ms('7d')
+    })
+
     req.session.user = {
         id: targetUser.id,
         email: targetUser.email,
@@ -72,6 +82,7 @@ app.post('/login', (req, res) => {
     res.json({
         code: 200,
         message: '登录成功',
+        token: token,
         email: targetUser.email,
         id: targetUser.id
     })
@@ -97,18 +108,35 @@ app.post('/register', (req, res) => {
             message: "该账号已存在"
         })
     }
-    const newUser: user = { id: uuidv4(), email: email, password: password, nickName: nickName }
+    const newUser: user = {
+        id: uuidv4(),
+        email: email,
+        password: password,
+        nickName: nickName
+    }
 
     userList.push(newUser)
+
     console.log(userList)
+
     req.session.user = {
         id: newUser.id,
         email: newUser.email,
         nickName: nickName
     }
+
+    // jwt签名
+    const token = jwt.sign({
+        id: newUser.id,
+        email: newUser.email,
+    }, SETCRT, {
+        expiresIn:ms('7d')
+    })
+
     res.status(201).json({
         code: 201,
         message: '注册成功',
+        token: token,
         email: newUser.email,
         id: newUser.id,
         nickName: newUser.nickName
