@@ -1,34 +1,36 @@
 {
-  "name": "chat-server",
-  "version": "1.0.0",
-  "description": "",
-  "main": "src/app.ts",
-  "scripts": {
-    "start": "nodemon src/app.ts"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "packageManager": "pnpm@11.1.2+sha512.415a1cc25974731e75455c1468371be74c5aa5fb7621b50d4056d222451609f11412f23fd602e6169f1e060466641f798597e1be961a10688836a67b16569499",
-  "dependencies": {
-    "@types/cookie-parser": "^1.4.10",
-    "cookie-parser": "^1.4.7",
-    "cors": "^2.8.6",
-    "express": "^5.2.1",
-    "express-session": "^1.19.0",
-    "jsonwebtoken": "^9.0.3",
-    "socket.io": "^4.8.3",
-    "uuid": "^14.0.0"
-  },
-  "type": "module",
-  "devDependencies": {
-    "@types/cors": "^2.8.19",
-    "@types/express": "^5.0.6",
-    "@types/express-session": "^1.19.0",
-    "@types/jsonwebtoken": "^9.0.10",
-    "@types/node": "^25.7.0",
-    "nodemon": "^3.1.14",
-    "ts-node": "^10.9.2",
-    "typescript": "^6.0.3"
-  }
+    "name": "chat-server",
+    "version": "1.0.0",
+    "description": "",
+    "main": "src/app.ts",
+    "scripts": {
+        "start": "nodemon src/app.ts"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "packageManager": "pnpm@11.5.0+sha512.dbfcc4f81cf48597afd4bc391ffdf12c11f1a9fb83a395bfa6b0a2d9cc2fd8ffebafdb1ccbd529632153f793904c2615b7f09fe1a345473fd1c35845172a8eb1",
+    "dependencies": {
+        "@types/cookie-parser": "^1.4.10",
+        "cookie": "^1.1.1",
+        "cookie-parser": "^1.4.7",
+        "cors": "^2.8.6",
+        "express": "^5.2.1",
+        "express-session": "^1.19.0",
+        "jsonwebtoken": "^9.0.3",
+        "socket.io": "^4.8.3",
+        "uuid": "^14.0.0"
+    },
+    "type": "module",
+    "devDependencies": {
+        "@types/cors": "^2.8.19",
+        "@types/express": "^5.0.6",
+        "@types/express-session": "^1.19.0",
+        "@types/jsonwebtoken": "^9.0.10",
+        "@types/node": "^25.7.0",
+        "nodemon": "^3.1.14",
+        "prettier": "3.8.4",
+        "ts-node": "^10.9.2",
+        "typescript": "^6.0.3"
+    }
 }

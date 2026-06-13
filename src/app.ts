@@ -1,20 +1,30 @@
-import express from "express"
+import express from 'express'
 import session from 'express-session'
 import cookieParser from 'cookie-parser'
 import cookie from 'cookie'
-import { Server } from "socket.io";
-import { createServer } from 'node:http';
+import { Server } from 'socket.io'
+import { createServer } from 'node:http'
 import cors from 'cors'
 import jwt from 'jsonwebtoken'
-import { v4 as uuidv4 } from "uuid"
-import type { message, user } from "./types/index.ts"
+import { v4 as uuidv4 } from 'uuid'
+import type { message, user } from './types/index.ts'
 
 // todo:数据库
 let userList: user[] = [
-    { id: 'a3962166-7b4c-4773-8f4e-00721508d2a2', email: 'test@example.com', password: '123456', nickname: 'admin' }
+    {
+        id: 'a3962166-7b4c-4773-8f4e-00721508d2a2',
+        email: 'test@example.com',
+        password: '123456',
+        nickname: 'admin',
+    },
 ]
 let messagesList: message[] = [
-    { messageId: 1, senderId: 'a3962166-7b4c-4773-8f4e-00721508d2a2', senderNickname: 'admin', content: 'hello' }
+    {
+        messageId: 1,
+        senderId: 'a3962166-7b4c-4773-8f4e-00721508d2a2',
+        senderNickname: 'admin',
+        content: 'hello',
+    },
 ]
 let messageId = 1
 
@@ -24,27 +34,34 @@ const app = express()
 const server = createServer(app)
 const io = new Server(server, {
     cors: {
-        origin: "*",
-        methods: ["GET", "POST"]
-    }
+        origin: '*',
+        methods: ['GET', 'POST'],
+    },
 })
 app.use(express.json())
 app.use(cors())
 app.use(cookieParser())
-app.use(session({
-    secret: 'cf5787de-4e14-4923-9c0c-fe987025eea5',
-    resave: false, // 是否每次请求都重新保存 Session（设为 false 提高性能）
-    saveUninitialized: false, // 是否自动为未登录的用户初始化一个空 Session（设为 false 节省内存）
-    cookie: {
-        maxAge: 1000 * 60 * 60 * 24, // Cookie 有效期：1天（单位：毫秒）
-        secure: false, // 如果是 https 必须设为 true，本地开发 http 设为 false
-        httpOnly: true // 核心安全配置：防止前端通过 JS (document.cookie) 盗取 Session ID
-    }
-}))
+app.use(
+    session({
+        secret: 'cf5787de-4e14-4923-9c0c-fe987025eea5',
+        resave: false, // 是否每次请求都重新保存 Session（设为 false 提高性能）
+        saveUninitialized: false, // 是否自动为未登录的用户初始化一个空 Session（设为 false 节省内存）
+        cookie: {
+            maxAge: 1000 * 60 * 60 * 24, // Cookie 有效期：1天（单位：毫秒）
+            secure: false, // 如果是 https 必须设为 true，本地开发 http 设为 false
+            httpOnly: true, // 核心安全配置：防止前端通过 JS (document.cookie) 盗取 Session ID
+        },
+    })
+)
 
 server.listen(PORT, () => {
     console.log(`server is running at port ${PORT}`)
-    console.log('The admin token is:', jwt.sign({ id: userList[0]?.id, email: userList[0]?.email, }, SECRET, { expiresIn: "7 days" }))
+    console.log(
+        'The admin token is:',
+        jwt.sign({ id: userList[0]?.id, email: userList[0]?.email }, SECRET, {
+            expiresIn: '7 days',
+        })
+    )
 })
 
 io.on('connection', (socket) => {
@@ -56,42 +73,48 @@ io.on('connection', (socket) => {
             try {
                 const decoded = jwt.verify(reqCookie.token, SECRET)
                 // 如果 decoded 是 string，则直接解析；如果是对象，则已经是解析好的 Payload
-                const userInfo = typeof decoded === 'string' ? JSON.parse(decoded) : decoded
+                const userInfo =
+                    typeof decoded === 'string' ? JSON.parse(decoded) : decoded
 
                 if (userInfo.id && userInfo.email) {
-                    const targetUser = userList.find(u => u.email === userInfo.email && u.password === userInfo.password)
+                    const targetUser = userList.find(
+                        (u) =>
+                            u.email === userInfo.email &&
+                            u.password === userInfo.password
+                    )
                     if (targetUser) {
                         console.log('getMessages', messagesList)
                         socket.emit('messagesList', {
                             status: 200,
-                            messagesList: messagesList
+                            messagesList: messagesList,
                         })
                     }
                 } else {
                     socket.emit('messagesList', {
-                        status: 403
+                        status: 403,
                     })
                 }
-            }
-            catch {
+            } catch {
                 socket.emit('messagesList', {
-                    status: 403
+                    status: 403,
                 })
             }
-        }
-        else {
+        } else {
             socket.emit('messagesList', {
-                status: 403
+                status: 403,
             })
         }
-
     })
     // 接受消息
     socket.on('sendMessage', (content) => {
         messageId += 1
-        const newMessage: message = { messageId: messageId, senderId: 'a3962166-7b4c-4773-8f4e-00721508d2a2', senderNickname: 'admin', content: 'hello' }
+        const newMessage: message = {
+            messageId: messageId,
+            senderId: 'a3962166-7b4c-4773-8f4e-00721508d2a2',
+            senderNickname: 'admin',
+            content: 'hello',
+        }
         messagesList.push(newMessage)
-
     })
 })
 
@@ -104,44 +127,49 @@ app.post('/login', (req, res) => {
     if (!email || !password) {
         return res.status(400).json({
             code: 400,
-            message: "邮箱或密码不能为空"
+            message: '邮箱或密码不能为空',
         })
     }
-    const targetUser = userList.find(u => u.email === email && u.password === password)
+    const targetUser = userList.find(
+        (u) => u.email === email && u.password === password
+    )
     if (!targetUser) {
         return res.status(401).json({
             code: 401,
-            message: "邮箱或密码错误"
+            message: '邮箱或密码错误',
         })
     }
 
     // jwt签名
-    const token = jwt.sign({
-        id: targetUser.id,
-        email: targetUser.email,
-    }, SECRET, {
-        expiresIn: "7 days"
-    })
+    const token = jwt.sign(
+        {
+            id: targetUser.id,
+            email: targetUser.email,
+        },
+        SECRET,
+        {
+            expiresIn: '7 days',
+        }
+    )
 
     req.session.user = {
         id: targetUser.id,
         email: targetUser.email,
-        nickname: targetUser.nickname
+        nickname: targetUser.nickname,
     }
 
     res.cookie('token', token, {
         httpOnly: true,
         sameSite: 'lax',
-        maxAge: 1000 * 60 * 60 * 24 * 7 // 7d
+        maxAge: 1000 * 60 * 60 * 24 * 7, // 7d
     }).json({
         code: 200,
         message: '登录成功',
         token: token,
         email: targetUser.email,
         id: targetUser.id,
-        nickname: targetUser.nickname
+        nickname: targetUser.nickname,
     })
-
 })
 
 // 注册
@@ -153,21 +181,21 @@ app.post('/register', (req, res) => {
     if (!email || !password || !nickname) {
         return res.status(400).json({
             code: 400,
-            message: "邮箱、密码或昵称不能为空"
+            message: '邮箱、密码或昵称不能为空',
         })
     }
-    const isExist = userList.find(u => u.email === email)
+    const isExist = userList.find((u) => u.email === email)
     if (isExist) {
         return res.status(401).json({
             code: 401,
-            message: "该账号已存在"
+            message: '该账号已存在',
         })
     }
     const newUser: user = {
         id: uuidv4(),
         email: email,
         password: password,
-        nickname: nickname
+        nickname: nickname,
     }
 
     userList.push(newUser)
@@ -177,27 +205,33 @@ app.post('/register', (req, res) => {
     req.session.user = {
         id: newUser.id,
         email: newUser.email,
-        nickname: nickname
+        nickname: nickname,
     }
 
     // jwt签名
-    const token = jwt.sign({
-        id: newUser.id,
-        email: newUser.email,
-    }, SECRET, {
-        expiresIn: "7 days"
-    })
+    const token = jwt.sign(
+        {
+            id: newUser.id,
+            email: newUser.email,
+        },
+        SECRET,
+        {
+            expiresIn: '7 days',
+        }
+    )
 
     res.cookie('token', token, {
         httpOnly: true,
         sameSite: 'lax',
-        maxAge: 1000 * 60 * 60 * 24 * 7 // 7d
-    }).status(201).json({
-        code: 201,
-        message: '注册成功',
-        token: token,
-        email: newUser.email,
-        id: newUser.id,
-        nickname: newUser.nickname
+        maxAge: 1000 * 60 * 60 * 24 * 7, // 7d
     })
+        .status(201)
+        .json({
+            code: 201,
+            message: '注册成功',
+            token: token,
+            email: newUser.email,
+            id: newUser.id,
+            nickname: newUser.nickname,
+        })
 })
