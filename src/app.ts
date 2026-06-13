@@ -1,6 +1,7 @@
 import express from "express"
 import session from 'express-session'
 import cookieParser from 'cookie-parser'
+import cookie from 'cookie'
 import { Server } from "socket.io";
 import { createServer } from 'node:http';
 import cors from 'cors'
@@ -15,12 +16,18 @@ let userList: user[] = [
 let messagesList: message[] = [
     { messageId: 1, senderId: 'a3962166-7b4c-4773-8f4e-00721508d2a2', senderNickname: 'admin', content: 'hello' }
 ]
+let messageId = 1
 
 const PORT = 3000
-const SETCRT = ' vjndjsgioehnrfowjr39j'
+const SECRET = ' vjndjsgioehnrfowjr39j'
 const app = express()
 const server = createServer(app)
-const io = new Server(server)
+const io = new Server(server, {
+    cors: {
+        origin: "*",
+        methods: ["GET", "POST"]
+    }
+})
 app.use(express.json())
 app.use(cors())
 app.use(cookieParser())
@@ -37,13 +44,54 @@ app.use(session({
 
 server.listen(PORT, () => {
     console.log(`server is running at port ${PORT}`)
+    console.log('The admin token is:', jwt.sign({ id: userList[0]?.id, email: userList[0]?.email, }, SECRET, { expiresIn: "7 days" }))
 })
 
 io.on('connection', (socket) => {
     console.log('connected')
+    // 广播消息
     socket.on('getMessages', () => {
-        console.log('getMessages')
-        socket.emit('messagesList', messagesList)
+        const reqCookie = cookie.parse(socket.handshake.headers.cookie || '')
+        if (reqCookie.token) {
+            try {
+                const decoded = jwt.verify(reqCookie.token, SECRET)
+                // 如果 decoded 是 string，则直接解析；如果是对象，则已经是解析好的 Payload
+                const userInfo = typeof decoded === 'string' ? JSON.parse(decoded) : decoded
+
+                if (userInfo.id && userInfo.email) {
+                    const targetUser = userList.find(u => u.email === userInfo.email && u.password === userInfo.password)
+                    if (targetUser) {
+                        console.log('getMessages', messagesList)
+                        socket.emit('messagesList', {
+                            status: 200,
+                            messagesList: messagesList
+                        })
+                    }
+                } else {
+                    socket.emit('messagesList', {
+                        status: 403
+                    })
+                }
+            }
+            catch {
+                socket.emit('messagesList', {
+                    status: 403
+                })
+            }
+        }
+        else {
+            socket.emit('messagesList', {
+                status: 403
+            })
+        }
+
+    })
+    // 接受消息
+    socket.on('sendMessage', (content) => {
+        messageId += 1
+        const newMessage: message = { messageId: messageId, senderId: 'a3962166-7b4c-4773-8f4e-00721508d2a2', senderNickname: 'admin', content: 'hello' }
+        messagesList.push(newMessage)
+
     })
 })
 
@@ -71,8 +119,8 @@ app.post('/login', (req, res) => {
     const token = jwt.sign({
         id: targetUser.id,
         email: targetUser.email,
-    }, SETCRT, {
-        expiresIn:"7 days"
+    }, SECRET, {
+        expiresIn: "7 days"
     })
 
     req.session.user = {
@@ -81,16 +129,17 @@ app.post('/login', (req, res) => {
         nickname: targetUser.nickname
     }
 
-    res.cookie('token',token,{
-        httpOnly:true,
-        sameSite:'lax',
-        maxAge:1000 * 60 * 60 * 24 * 7 // 7d
+    res.cookie('token', token, {
+        httpOnly: true,
+        sameSite: 'lax',
+        maxAge: 1000 * 60 * 60 * 24 * 7 // 7d
     }).json({
         code: 200,
         message: '登录成功',
         token: token,
         email: targetUser.email,
-        id: targetUser.id
+        id: targetUser.id,
+        nickname: targetUser.nickname
     })
 
 })
@@ -135,14 +184,14 @@ app.post('/register', (req, res) => {
     const token = jwt.sign({
         id: newUser.id,
         email: newUser.email,
-    }, SETCRT, {
-        expiresIn:"7 days"
+    }, SECRET, {
+        expiresIn: "7 days"
     })
 
-    res.cookie('token',token,{
-        httpOnly:true,
-        sameSite:'lax',
-        maxAge:1000 * 60 * 60 * 24 * 7 // 7d
+    res.cookie('token', token, {
+        httpOnly: true,
+        sameSite: 'lax',
+        maxAge: 1000 * 60 * 60 * 24 * 7 // 7d
     }).status(201).json({
         code: 201,
         message: '注册成功',
