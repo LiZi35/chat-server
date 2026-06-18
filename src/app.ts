@@ -34,12 +34,13 @@ const app = express()
 const server = createServer(app)
 const io = new Server(server, {
     cors: {
-        origin: '*',
+        origin: 'http://localhost:5173',
+        credentials: true,
         methods: ['GET', 'POST'],
     },
 })
 app.use(express.json())
-app.use(cors())
+app.use(cors({ origin: 'http://localhost:5173', credentials: true }))
 app.use(cookieParser())
 app.use(
     session({
@@ -68,41 +69,14 @@ io.on('connection', (socket) => {
     console.log('connected')
     // 广播消息
     socket.on('getMessages', () => {
+        console.log(socket.handshake.headers.cookie)
         const reqCookie = cookie.parse(socket.handshake.headers.cookie || '')
-        if (reqCookie.token) {
-            try {
-                const decoded = jwt.verify(reqCookie.token, SECRET)
-                // 如果 decoded 是 string，则直接解析；如果是对象，则已经是解析好的 Payload
-                const userInfo =
-                    typeof decoded === 'string' ? JSON.parse(decoded) : decoded
-
-                if (userInfo.id && userInfo.email) {
-                    const targetUser = userList.find(
-                        (u) =>
-                            u.email === userInfo.email &&
-                            u.password === userInfo.password
-                    )
-                    if (targetUser) {
-                        console.log('getMessages', messagesList)
-                        socket.emit('messagesList', {
-                            status: 200,
-                            messagesList: messagesList,
-                        })
-                    }
-                } else {
-                    socket.emit('messagesList', {
-                        status: 403,
-                    })
-                }
-            } catch {
-                socket.emit('messagesList', {
-                    status: 403,
-                })
-            }
+        // console.log(reqCookie)
+        const user = verifyUser(reqCookie.token)
+        if (user.verified == true) {
+            socket.emit('messagesList', { status: 200, message: user.message, messagesList: messagesList })
         } else {
-            socket.emit('messagesList', {
-                status: 403,
-            })
+            socket.emit('messagesList', { status: 403, message: user.message })
         }
     })
     // 接受消息
@@ -235,3 +209,53 @@ app.post('/register', (req, res) => {
             nickname: newUser.nickname,
         })
 })
+
+// 验证用户
+function verifyUser(userToken: string | undefined) {
+    if (userToken) {
+        try {
+            const decoded = jwt.verify(userToken, SECRET)
+            // 如果 decoded 是 string，则直接解析；如果是对象，则已经是解析好的 Payload
+            const userInfo =
+                typeof decoded === 'string' ? JSON.parse(decoded) : decoded
+
+            if (userInfo.id && userInfo.email) {
+                const targetUser = userList.find(
+                    (u) =>
+                        u.email === userInfo.email &&
+                        u.id === userInfo.id
+                )
+                if (targetUser) {
+                    return ({
+                        verified: true,
+                        message: '已验证',
+                        user: {
+                            id: userInfo.id,
+                            email: userInfo.email
+                        }
+                    })
+                } else {
+                    return ({
+                        verified: false,
+                        message: '未知用户',
+                    })
+                }
+            } else {
+                return ({
+                    verified: false,
+                    message: '登录异常',
+                })
+            }
+        } catch {
+            return ({
+                verified: false,
+                message: '登录已过期',
+            })
+        }
+    } else {
+        return ({
+            verified: false,
+            message: '未登录',
+        })
+    }
+}
