@@ -25,8 +25,14 @@ let messagesList: message[] = [
         senderNickname: 'admin',
         content: 'hello',
     },
+    {
+        messageId: 2,
+        senderId: 'a3962166-7b4c-4773-8f4e-00721508d2a2',
+        senderNickname: 'admin',
+        content: 'hi',
+    },
 ]
-let messageId = 1
+let messageId = 2
 
 const PORT = 3000
 const SECRET = ' vjndjsgioehnrfowjr39j'
@@ -69,7 +75,7 @@ io.on('connection', (socket) => {
     console.log('connected')
     // 广播消息
     socket.on('getMessages', () => {
-        console.log(socket.handshake.headers.cookie)
+        // console.log(socket.handshake.headers.cookie)
         const reqCookie = cookie.parse(socket.handshake.headers.cookie || '')
         // console.log(reqCookie)
         const user = verifyUser(reqCookie.token)
@@ -80,15 +86,21 @@ io.on('connection', (socket) => {
         }
     })
     // 接受消息
-    socket.on('sendMessage', (content) => {
-        messageId += 1
-        const newMessage: message = {
-            messageId: messageId,
-            senderId: 'a3962166-7b4c-4773-8f4e-00721508d2a2',
-            senderNickname: 'admin',
-            content: 'hello',
+    socket.on('sendMessage', (content: string) => {
+        const senderCookie = cookie.parse(socket.handshake.headers.cookie || '')
+        const user = verifyUser(senderCookie.token)
+        if (user.verified == true && user.user) {
+            messageId += 1
+            const newMessage: message = {
+                messageId: messageId,
+                senderId: user.user.id,
+                senderNickname: user.user.nickname,
+                content: content,
+            }
+            messagesList.push(newMessage)
+        } else {
+            socket.emit('error', user.message)
         }
-        messagesList.push(newMessage)
     })
 })
 
@@ -230,8 +242,9 @@ function verifyUser(userToken: string | undefined) {
                         verified: true,
                         message: '已验证',
                         user: {
-                            id: userInfo.id,
-                            email: userInfo.email
+                            id: targetUser.id,
+                            email: targetUser.email,
+                            nickname: targetUser.nickname
                         }
                     })
                 } else {
