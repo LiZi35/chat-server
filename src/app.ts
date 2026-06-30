@@ -24,12 +24,14 @@ let messagesList: message[] = [
         senderId: 'a3962166-7b4c-4773-8f4e-00721508d2a2',
         senderNickname: 'admin',
         content: 'hello',
+        date: new Date('2026-06-30T14:56:30Z')
     },
     {
         messageId: 2,
         senderId: 'a3962166-7b4c-4773-8f4e-00721508d2a2',
         senderNickname: 'admin',
         content: 'hi',
+        date: new Date('2026-06-30T14:56:40Z')
     },
 ]
 let messageId = 2
@@ -101,6 +103,7 @@ io.on('connection', (socket) => {
                 senderId: socket.data.user.id,
                 senderNickname: socket.data.user.nickname,
                 content: content,
+                date: new Date()
             }
             messagesList.push(newMessage)
             io.emit('messagesList', { status: 200, message: '已发送', messagesList: messagesList })

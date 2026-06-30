@@ -9,4 +9,5 @@ export interface message {
     senderId: string
     senderNickname: string
     content: string
+    date: Date
 }
