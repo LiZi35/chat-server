@@ -71,35 +71,41 @@ server.listen(PORT, () => {
     )
 })
 
+io.use((socket, next) => {
+    const reqCookie = cookie.parse(socket.handshake.headers.cookie || '')
+    const user = verifyUser(reqCookie.token)
+    if (user.verified == true && user.user) {
+        socket.data.user = user.user
+        next()
+    } else {
+        next(new Error(user.message))
+    }
+})
+
 io.on('connection', (socket) => {
     console.log('connected')
     // 广播消息
     socket.on('getMessages', () => {
-        // console.log(socket.handshake.headers.cookie)
-        const reqCookie = cookie.parse(socket.handshake.headers.cookie || '')
-        // console.log(reqCookie)
-        const user = verifyUser(reqCookie.token)
-        if (user.verified == true) {
-            socket.emit('messagesList', { status: 200, message: user.message, messagesList: messagesList })
+        if (socket.data.user) {
+            socket.emit('messagesList', { status: 200, message: '认证成功', messagesList: messagesList })
         } else {
-            socket.emit('messagesList', { status: 403, message: user.message })
+            socket.emit('error', '未认证')
         }
     })
     // 接受消息
     socket.on('sendMessage', (content: string) => {
-        const senderCookie = cookie.parse(socket.handshake.headers.cookie || '')
-        const user = verifyUser(senderCookie.token)
-        if (user.verified == true && user.user) {
+        if (socket.data.user) {
             messageId += 1
             const newMessage: message = {
                 messageId: messageId,
-                senderId: user.user.id,
-                senderNickname: user.user.nickname,
+                senderId: socket.data.user.id,
+                senderNickname: socket.data.user.nickname,
                 content: content,
             }
             messagesList.push(newMessage)
+            io.emit('messagesList', { status: 200, message: '已发送', messagesList: messagesList })
         } else {
-            socket.emit('error', user.message)
+            socket.emit('error', '未认证')
         }
     })
 })
