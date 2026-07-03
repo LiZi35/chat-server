@@ -8,33 +8,34 @@ import cors from 'cors'
 import jwt from 'jsonwebtoken'
 import { v4 as uuidv4 } from 'uuid'
 import type { message, user } from './types/index.ts'
+import * as argon2 from "argon2";
 
 // todo:数据库
 let userList: user[] = [
     {
         id: 'a3962166-7b4c-4773-8f4e-00721508d2a2',
         email: 'test@example.com',
-        password: '123456',
+        password: await argon2.hash('123456'),
         nickname: 'admin',
     },
 ]
 let messagesList: message[] = [
     {
-        messageId: 1,
+        messageId: 0,
         senderId: 'a3962166-7b4c-4773-8f4e-00721508d2a2',
         senderNickname: 'admin',
         content: 'hello',
         date: new Date('2026-06-30T14:56:30Z')
     },
     {
-        messageId: 2,
+        messageId: 1,
         senderId: 'a3962166-7b4c-4773-8f4e-00721508d2a2',
         senderNickname: 'admin',
         content: 'hi',
         date: new Date('2026-06-30T14:56:40Z')
     },
 ]
-let messageId = 2
+let messageId = 1
 
 const PORT = 3000
 const SECRET = ' vjndjsgioehnrfowjr39j'
@@ -65,18 +66,18 @@ app.use(
 
 server.listen(PORT, () => {
     console.log(`server is running at port ${PORT}`)
-    console.log(
+    /* console.log(
         'The admin token is:',
         jwt.sign({ id: userList[0]?.id, email: userList[0]?.email }, SECRET, {
             expiresIn: '7 days',
         })
-    )
+    ) */
 })
 
 io.use((socket, next) => {
     const reqCookie = cookie.parse(socket.handshake.headers.cookie || '')
     const user = verifyUser(reqCookie.token)
-    if (user.verified == true && user.user) {
+    if (user.verified === true && user.user) {
         socket.data.user = user.user
         next()
     } else {
@@ -114,7 +115,7 @@ io.on('connection', (socket) => {
 })
 
 // 登录
-app.post('/login', (req, res) => {
+app.post('/login', async (req, res) => {
     // console.log(req.body)
     // res.send(null)
     const { email, password } = req.body || {}
@@ -126,12 +127,27 @@ app.post('/login', (req, res) => {
         })
     }
     const targetUser = userList.find(
-        (u) => u.email === email && u.password === password
+        (u) => u.email === email
     )
     if (!targetUser) {
         return res.status(401).json({
             code: 401,
             message: '邮箱或密码错误',
+        })
+    }
+    try {
+        const isMatch = await argon2.verify(targetUser.password, password)
+        if (!isMatch) {
+            return res.status(401).json({
+                code: 401,
+                message: '邮箱或密码错误',
+            })
+        }
+    } catch (error) {
+        console.log('verify error', error)
+        return res.status(500).json({
+            code: 500,
+            message: '密码验证失败',
         })
     }
 
@@ -168,9 +184,7 @@ app.post('/login', (req, res) => {
 })
 
 // 注册
-app.post('/register', (req, res) => {
-    // console.log(req.body)
-    // res.send(null)
+app.post('/register', async (req, res) => {
     const { email, password, nickname } = req.body || {}
 
     if (!email || !password || !nickname) {
@@ -186,49 +200,67 @@ app.post('/register', (req, res) => {
             message: '该账号已存在',
         })
     }
-    const newUser: user = {
-        id: uuidv4(),
-        email: email,
-        password: password,
-        nickname: nickname,
-    }
-
-    userList.push(newUser)
-
-    console.log(userList)
-
-    req.session.user = {
-        id: newUser.id,
-        email: newUser.email,
-        nickname: nickname,
-    }
-
-    // jwt签名
-    const token = jwt.sign(
-        {
-            id: newUser.id,
-            email: newUser.email,
-        },
-        SECRET,
-        {
-            expiresIn: '7 days',
+    try {
+        const newUser: user = {
+            id: uuidv4(),
+            email: email,
+            password: await argon2.hash(password),
+            nickname: nickname,
         }
-    )
 
-    res.cookie('token', token, {
-        httpOnly: true,
-        sameSite: 'lax',
-        maxAge: 1000 * 60 * 60 * 24 * 7, // 7d
-    })
-        .status(201)
-        .json({
-            code: 201,
-            message: '注册成功',
-            token: token,
-            email: newUser.email,
+        userList.push(newUser)
+
+        console.log(userList)
+
+        req.session.user = {
             id: newUser.id,
-            nickname: newUser.nickname,
+            email: newUser.email,
+            nickname: nickname,
+        }
+
+        try {
+            // jwt签名
+            const token = jwt.sign(
+                {
+                    id: newUser.id,
+                    email: newUser.email,
+                },
+                SECRET,
+                {
+                    expiresIn: '7 days',
+                }
+            )
+
+            res.cookie('token', token, {
+                httpOnly: true,
+                sameSite: 'lax',
+                maxAge: 1000 * 60 * 60 * 24 * 7, // 7d
+            })
+                .status(201)
+                .json({
+                    code: 201,
+                    message: '注册成功',
+                    token: token,
+                    email: newUser.email,
+                    id: newUser.id,
+                    nickname: newUser.nickname,
+                })
+        }
+        catch (error) {
+            console.error('Error signing JWT:', error)
+            res.status(500).json({
+                code: 500,
+                message: '服务器错误',
+            })
+        }
+    }
+    catch (error) {
+        console.error('Error hashing password:', error)
+        res.status(500).json({
+            code: 500,
+            message: '服务器错误',
         })
+    }
 })
 
 // 验证用户
@@ -249,7 +281,7 @@ function verifyUser(userToken: string | undefined) {
                 if (targetUser) {
                     return ({
                         verified: true,
-                        message: '已验证',
+                        message: 'VERIFIED_USER',
                         user: {
                             id: targetUser.id,
                             email: targetUser.email,
@@ -259,25 +291,25 @@ function verifyUser(userToken: string | undefined) {
                 } else {
                     return ({
                         verified: false,
-                        message: '未知用户',
+                        message: 'UNKNOWN_USER',
                     })
                 }
             } else {
                 return ({
                     verified: false,
-                    message: '登录异常',
+                    message: 'ABNORMAL_USER',
                 })
             }
         } catch {
             return ({
                 verified: false,
-                message: '登录已过期',
+                message: 'EXPIRED_USER',
             })
         }
     } else {
         return ({
             verified: false,
-            message: '未登录',
+            message: 'NOT_LOGGED_IN',
         })
     }
 }
