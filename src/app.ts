@@ -181,7 +181,7 @@ app.post('/login', async (req, res) => {
     }).json({
         code: 200,
         message: '登录成功',
-        token: token,
+        // token: token,
         email: targetUser.email,
         id: targetUser.id,
         nickname: targetUser.nickname,
@@ -245,7 +245,7 @@ app.post('/register', async (req, res) => {
                 .json({
                     code: 201,
                     message: '注册成功',
-                    token: token,
+                    // token: token,
                     email: newUser.email,
                     id: newUser.id,
                     nickname: newUser.nickname,
