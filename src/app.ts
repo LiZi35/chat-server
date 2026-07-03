@@ -1,3 +1,4 @@
+import 'dotenv/config'
 import express from 'express'
 import session from 'express-session'
 import cookieParser from 'cookie-parser'
@@ -9,6 +10,10 @@ import jwt from 'jsonwebtoken'
 import { v4 as uuidv4 } from 'uuid'
 import type { message, user } from './types/index.ts'
 import * as argon2 from "argon2";
+
+if (!process.env.PORT || !process.env.JWT_SECRET || !process.env.EXPRESS_SESSION_SECRET) {
+    throw new Error('.env缺少配置')
+}
 
 // todo:数据库
 let userList: user[] = [
@@ -37,8 +42,8 @@ let messagesList: message[] = [
 ]
 let messageId = 1
 
-const PORT = 3000
-const SECRET = ' vjndjsgioehnrfowjr39j'
+const PORT = Number(process.env.PORT)
+const SECRET = process.env.JWT_SECRET
 const app = express()
 const server = createServer(app)
 const io = new Server(server, {
@@ -53,7 +58,7 @@ app.use(cors({ origin: 'http://localhost:5173', credentials: true }))
 app.use(cookieParser())
 app.use(
     session({
-        secret: 'cf5787de-4e14-4923-9c0c-fe987025eea5',
+        secret: process.env.EXPRESS_SESSION_SECRET,
         resave: false, // 是否每次请求都重新保存 Session（设为 false 提高性能）
         saveUninitialized: false, // 是否自动为未登录的用户初始化一个空 Session（设为 false 节省内存）
         cookie: {
