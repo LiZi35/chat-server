@@ -59,12 +59,12 @@ app.use(cookieParser())
 app.use(
     session({
         secret: process.env.EXPRESS_SESSION_SECRET,
-        resave: false, // 是否每次请求都重新保存 Session（设为 false 提高性能）
-        saveUninitialized: false, // 是否自动为未登录的用户初始化一个空 Session（设为 false 节省内存）
+        resave: false,
+        saveUninitialized: false,
         cookie: {
-            maxAge: 1000 * 60 * 60 * 24, // Cookie 有效期：1天（单位：毫秒）
+            maxAge: 1000 * 60 * 60 * 24 * 7, // 7d
             secure: false, // 如果是 https 必须设为 true，本地开发 http 设为 false
-            httpOnly: true, // 核心安全配置：防止前端通过 JS (document.cookie) 盗取 Session ID
+            httpOnly: true,
         },
     })
 )
@@ -168,11 +168,11 @@ app.post('/login', async (req, res) => {
         }
     )
 
-    req.session.user = {
+    /* req.session.user = {
         id: targetUser.id,
         email: targetUser.email,
         nickname: targetUser.nickname,
-    }
+    } */
 
     res.cookie('token', token, {
         httpOnly: true,
@@ -217,11 +217,11 @@ app.post('/register', async (req, res) => {
 
         console.log(userList)
 
-        req.session.user = {
+        /* req.session.user = {
             id: newUser.id,
             email: newUser.email,
             nickname: nickname,
-        }
+        } */
 
         try {
             // jwt签名
