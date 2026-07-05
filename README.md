@@ -5,11 +5,17 @@
 
 支持收发文字消息
 
----
 
 ## 运行
 后端暂未支持https，建议搭配反代使用
 
+clone 本项目
+```shell
+git clone https://github.com/LiZi35/chat-server.git
+```
+```shell
+cd chat-server
+```
 复制`.env.example`为`.env`
 ```shell
 cp .env.example .env
@@ -39,6 +45,5 @@ pnpm build
 pnpm start
 ```
 
----
 ## 其他
 ~~本项目主要为古法编程而成~~
