@@ -1,10 +1,10 @@
-export interface user {
+export interface User {
     id: string
     email: string
     password: string
     nickname: string
 }
-export interface message {
+export interface Message {
     messageId: number
     senderId: string
     senderNickname: string

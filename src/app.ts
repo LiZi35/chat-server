@@ -8,39 +8,51 @@ import { createServer } from 'node:http'
 import cors from 'cors'
 import jwt from 'jsonwebtoken'
 import { v4 as uuidv4 } from 'uuid'
-import type { message, user } from './types/index.ts'
-import * as argon2 from "argon2";
+import type { User } from './types/index.ts'
+import * as argon2 from 'argon2'
+import Database from 'better-sqlite3'
 
 if (!process.env.PORT || !process.env.JWT_SECRET || !process.env.EXPRESS_SESSION_SECRET) {
     throw new Error('.env缺少配置')
 }
 
-// todo:数据库
-let userList: user[] = [
-    {
-        id: 'a3962166-7b4c-4773-8f4e-00721508d2a2',
-        email: 'test@example.com',
-        password: await argon2.hash('123456'),
-        nickname: 'admin',
-    },
-]
-let messagesList: message[] = [
-    {
-        messageId: 0,
-        senderId: 'a3962166-7b4c-4773-8f4e-00721508d2a2',
-        senderNickname: 'admin',
-        content: 'hello',
-        date: new Date('2026-06-30T14:56:30Z')
-    },
-    {
-        messageId: 1,
-        senderId: 'a3962166-7b4c-4773-8f4e-00721508d2a2',
-        senderNickname: 'admin',
-        content: 'hi',
-        date: new Date('2026-06-30T14:56:40Z')
-    },
-]
-let messageId = 1
+const db = new Database('data.db')
+db.pragma('journal_mode = WAL')
+
+db.exec(`
+    CREATE TABLE IF NOT EXISTS users(
+        id TEXT PRIMARY KEY,
+        email TEXT UNIQUE,
+        password TEXT,
+        nickname TEXT
+    );
+    CREATE TABLE IF NOT EXISTS messages(
+        messageId INTEGER PRIMARY KEY AUTOINCREMENT,
+        senderId TEXT,
+        senderNickname TEXT,
+        content TEXT,
+        date INTEGER
+    );
+`)
+
+const getMessages = db.prepare(`
+    SELECT * FROM messages;
+`)
+/** .run(senderId,senderNickname,content,date) */
+const addMessages = db.prepare(`
+    INSERT INTO messages (senderId,senderNickname,content,date)
+    VALUES (?,?,?,?);
+`)
+/** .run(id,email,password,nickname) */
+const addUser = db.prepare(`
+    INSERT INTO users (id,email,password,nickname)
+    VALUES (?,?,?,?);
+`)
+/** .get(email) */
+const findUser = db.prepare(`
+    SELECT id,email,password,nickname FROM users
+    WHERE email = ?;
+`)
 
 const PORT = Number(process.env.PORT)
 const SECRET = process.env.JWT_SECRET
@@ -77,12 +89,13 @@ server.listen(PORT, () => {
             expiresIn: '7 days',
         })
     ) */
+    console.log(getMessages.all())
 })
 
 io.use((socket, next) => {
     const reqCookie = cookie.parse(socket.handshake.headers.cookie || '')
     const user = verifyUser(reqCookie.token)
-    if (user.verified === true && user.user) {
+    if (user.verified && user.user) {
         socket.data.user = user.user
         next()
     } else {
@@ -95,7 +108,11 @@ io.on('connection', (socket) => {
     // 广播消息
     socket.on('getMessages', () => {
         if (socket.data.user) {
-            socket.emit('messagesList', { status: 200, message: '认证成功', messagesList: messagesList })
+            socket.emit('messagesList', {
+                status: 200,
+                message: '认证成功',
+                messagesList: getMessages.all(),
+            })
         } else {
             socket.emit('error', '未认证')
         }
@@ -103,16 +120,12 @@ io.on('connection', (socket) => {
     // 接受消息
     socket.on('sendMessage', (content: string) => {
         if (socket.data.user) {
-            messageId += 1
-            const newMessage: message = {
-                messageId: messageId,
-                senderId: socket.data.user.id,
-                senderNickname: socket.data.user.nickname,
-                content: content,
-                date: new Date()
-            }
-            messagesList.push(newMessage)
-            io.emit('messagesList', { status: 200, message: '已发送', messagesList: messagesList })
+            addMessages.run(socket.data.user.id, socket.data.user.nickname,content,new Date().getTime())
+            io.emit('messagesList', {
+                status: 200,
+                message: '新消息',
+                messagesList: getMessages.all(),
+            })
         } else {
             socket.emit('error', '未认证')
         }
@@ -131,9 +144,7 @@ app.post('/login', async (req, res) => {
             message: '邮箱或密码不能为空',
         })
     }
-    const targetUser = userList.find(
-        (u) => u.email === email
-    )
+    const targetUser = findUser.get(email) as User | undefined
     if (!targetUser) {
         return res.status(401).json({
             code: 401,
@@ -198,7 +209,7 @@ app.post('/register', async (req, res) => {
             message: '邮箱、密码或昵称不能为空',
         })
     }
-    const isExist = userList.find((u) => u.email === email)
+    const isExist = findUser.get(email) as User | undefined
     if (isExist) {
         return res.status(401).json({
             code: 401,
@@ -206,16 +217,16 @@ app.post('/register', async (req, res) => {
         })
     }
     try {
-        const newUser: user = {
+        const newUser: User = {
             id: uuidv4(),
             email: email,
             password: await argon2.hash(password),
             nickname: nickname,
         }
 
-        userList.push(newUser)
+        addUser.run(uuidv4(), email, await argon2.hash(password), nickname)
 
-        console.log(userList)
+        console.log(db.exec(`SELECT * FROM users`))
 
         /* req.session.user = {
             id: newUser.id,
@@ -250,16 +261,14 @@ app.post('/register', async (req, res) => {
                     id: newUser.id,
                     nickname: newUser.nickname,
                 })
-        }
-        catch (error) {
+        } catch (error) {
             console.error('Error signing JWT:', error)
             res.status(500).json({
                 code: 500,
                 message: '服务器错误',
             })
         }
-    }
-    catch (error) {
+    } catch (error) {
         console.error('Error hashing password:', error)
         res.status(500).json({
             code: 500,
@@ -268,53 +277,52 @@ app.post('/register', async (req, res) => {
     }
 })
 
-// 验证用户
-function verifyUser(userToken: string | undefined) {
+/** 验证用户 */
+function verifyUser(userToken: string | undefined): {
+    verified: boolean
+    message: string
+    user?: { id: string; email: string; nickname: string }
+} {
     if (userToken) {
         try {
             const decoded = jwt.verify(userToken, SECRET)
             // 如果 decoded 是 string，则直接解析；如果是对象，则已经是解析好的 Payload
-            const userInfo =
-                typeof decoded === 'string' ? JSON.parse(decoded) : decoded
+            const userInfo = typeof decoded === 'string' ? JSON.parse(decoded) : decoded
 
             if (userInfo.id && userInfo.email) {
-                const targetUser = userList.find(
-                    (u) =>
-                        u.email === userInfo.email &&
-                        u.id === userInfo.id
-                )
+                const targetUser = findUser.get(userInfo.email) as User | undefined
                 if (targetUser) {
-                    return ({
+                    return {
                         verified: true,
                         message: 'VERIFIED_USER',
                         user: {
                             id: targetUser.id,
                             email: targetUser.email,
-                            nickname: targetUser.nickname
-                        }
-                    })
+                            nickname: targetUser.nickname,
+                        },
+                    }
                 } else {
-                    return ({
+                    return {
                         verified: false,
                         message: 'UNKNOWN_USER',
-                    })
+                    }
                 }
             } else {
-                return ({
+                return {
                     verified: false,
                     message: 'ABNORMAL_USER',
-                })
+                }
             }
         } catch {
-            return ({
+            return {
                 verified: false,
                 message: 'EXPIRED_USER',
-            })
+            }
         }
     } else {
-        return ({
+        return {
             verified: false,
             message: 'NOT_LOGGED_IN',
-        })
+        }
     }
 }
