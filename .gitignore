@@ -2,6 +2,7 @@ node_modules/
 .vscode/
 .env
 .idea/
+dist/
 data.db
 data.db-shm
 data.db-wal

@@ -2,8 +2,8 @@ import { Router } from 'express'
 import jwt from 'jsonwebtoken'
 import { v4 as uuidv4 } from 'uuid'
 import * as argon2 from 'argon2'
-import { SECRET } from '../config/env.ts'
-import { findUser, addUser } from '../db/index.ts'
+import { SECRET } from '../config/env.js'
+import { findUser, addUser } from '../db/index.js'
 import type { User } from '../types/index.ts'
 
 const authRouter: ReturnType<typeof Router> = Router()

@@ -1,7 +1,7 @@
 import jwt from 'jsonwebtoken'
-import { SECRET } from '../config/env.ts'
-import { findUser } from '../db/index.ts'
-import type { User } from '../types/index.ts'
+import { SECRET } from '../config/env.js'
+import { findUser } from '../db/index.js'
+import type { User } from '../types/index.js'
 
 /** 验证用户 */
 export function verifyUser(userToken: string | undefined): {

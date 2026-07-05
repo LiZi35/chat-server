@@ -1,7 +1,7 @@
 import cookie from 'cookie'
 import type { Server } from 'socket.io'
-import { verifyUser } from '../middleware/auth.ts'
-import { getMessages, addMessages } from '../db/index.ts'
+import { verifyUser } from '../middleware/auth.js'
+import { getMessages, addMessages } from '../db/index.js'
 
 export function setupSocket(io: Server) {
     io.use((socket, next) => {

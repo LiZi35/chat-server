@@ -3,10 +3,9 @@ import cookieParser from 'cookie-parser'
 import { Server } from 'socket.io'
 import { createServer } from 'node:http'
 import cors from 'cors'
-import { PORT, CORS_ORIGIN } from './config/env.ts'
-import authRouter from './routes/auth.ts'
-import { setupSocket } from './socket/index.ts'
-import { getMessages } from './db/index.ts'
+import { PORT, CORS_ORIGIN } from './config/env.js'
+import authRouter from './routes/auth.js'
+import { setupSocket } from './socket/index.js'
 
 const app = express()
 const server = createServer(app)
@@ -28,5 +27,4 @@ setupSocket(io)
 
 server.listen(PORT, () => {
     console.log(`server is running at port ${PORT}`)
-    console.log(getMessages.all())
 })
