@@ -9,7 +9,9 @@
         // See also https://aka.ms/tsconfig/module
         "module": "nodenext",
         "target": "esnext",
-        "types": ["node", "express", "express-session", "cors"],
+        "allowImportingTsExtensions": true,
+        "noEmit": true,
+        "types": ["node", "express", "cors"],
         // For nodejs:
         // "lib": ["esnext"],
         // "types": ["node"],
@@ -17,8 +19,6 @@
 
         // Other Outputs
         "sourceMap": true,
-        "declaration": true,
-        "declarationMap": true,
 
         // Stricter Typechecking Options
         "noUncheckedIndexedAccess": true,
