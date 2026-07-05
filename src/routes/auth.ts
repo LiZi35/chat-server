@@ -91,7 +91,7 @@ authRouter.post('/register', async (req, res) => {
             nickname: nickname,
         }
 
-        addUser.run(uuidv4(), email, await argon2.hash(password), nickname)
+        addUser.run(newUser.id, email, await argon2.hash(password), nickname)
 
         try {
             // jwt签名
