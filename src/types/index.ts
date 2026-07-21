@@ -11,3 +11,8 @@ export interface Message {
     content: string
     date: Date
 }
+export interface VerifyCodeType {
+    email: string
+    code: number
+    getTime: number
+}
