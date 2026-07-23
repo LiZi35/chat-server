@@ -5,7 +5,14 @@ import * as argon2 from 'argon2'
 import validator from 'validator'
 import crypto from 'node:crypto'
 import { SECRET } from '../config/env.js'
-import { findUser, addUser, setVerifyCode, isSent, deleteVerifyCode } from '../db/index.js'
+import {
+    findUser,
+    addUser,
+    setVerifyCode,
+    isSent,
+    deleteVerifyCode,
+    updatePassword,
+} from '../db/index.js'
 import type { User, VerifyCodeType } from '../types/index.ts'
 import { sendVerifyCodeMail } from '../services/mail.js'
 
@@ -88,7 +95,7 @@ authRouter.post('/register', async (req, res) => {
     }
 
     const verifyCode = isSent.get(email) as VerifyCodeType | undefined
-    if (!verifyCode) {
+    if (!verifyCode || verifyCode.type !== 'register') {
         return res.status(400).json({
             code: 400,
             message: '未请求验证码',
@@ -163,20 +170,37 @@ authRouter.post('/register', async (req, res) => {
 
 // 发送验证码
 authRouter.post('/sendVerifyCode', async (req, res) => {
-    if (typeof req.body.email !== 'string') {
+    if (typeof req.body.email !== 'string' || !req.body.type) {
         res.status(400).json({
             code: 400,
-            message: '未提供邮箱',
+            message: '未提供必要参数',
         })
     }
 
-    const { email } = req.body
+    const { email, type } = req.body
+
+    if (type !== 'register' && type !== 'forgetPassword') {
+        return res.status(400).json({
+            code: 400,
+            message: '非法的请求参数',
+        })
+    }
 
     if (!validator.isEmail(email)) {
         return res.status(400).json({
             code: 400,
             message: '邮箱格式不正确',
         })
+    }
+
+    if (type === 'register') {
+        const verifyUser = findUser.get(email)
+        if (verifyUser) {
+            return res.status(401).json({
+                code: 400,
+                message: '用户已存在',
+            })
+        }
     }
 
     const code = crypto.randomInt(100000, 1000000)
@@ -193,9 +217,19 @@ authRouter.post('/sendVerifyCode', async (req, res) => {
         }
     }
 
+    const sendType = (function (type: string): string {
+        if (type === 'register') {
+            return '注册'
+        } else if (type === 'forgetPassword') {
+            return '忘记密码'
+        } else {
+            return '验证邮箱'
+        }
+    })(type)
+
     try {
-        setVerifyCode.run(email, code, new Date().getTime())
-        await sendVerifyCodeMail(email, code)
+        setVerifyCode.run(email, type, code, new Date().getTime())
+        await sendVerifyCodeMail(email, sendType, code)
     } catch (error) {
         return res.status(500).json({
             code: 500,
@@ -207,6 +241,80 @@ authRouter.post('/sendVerifyCode', async (req, res) => {
         code: 200,
         message: '验证码发送成功',
     })
+})
+
+// 忘记密码
+authRouter.post('/forgetPassword', async (req, res) => {
+    if (!req.body.email || !req.body.verifyCode || !req.body.newPassword) {
+        return res.status(400).json({
+            code: 400,
+            message: '未提供邮箱，密码，验证码',
+        })
+    }
+
+    const { email, verifyCode, newPassword } = req.body
+
+    const dataVerifyCode = isSent.get(email) as VerifyCodeType | undefined
+
+    if (!dataVerifyCode || dataVerifyCode.type !== 'forgetPassword') {
+        return res.status(400).json({
+            code: 400,
+            message: '未请求验证码',
+        })
+    }
+
+    if (new Date().getTime() - dataVerifyCode.getTime > 1000 * 60 * 5) {
+        return res.status(422).json({
+            code: 422,
+            message: '验证码已过期',
+        })
+    }
+
+    if (Number(verifyCode) !== Number(dataVerifyCode.code)) {
+        return res.status(400).json({
+            code: 400,
+            message: '验证码不正确',
+        })
+    }
+
+    const user = findUser.get(email) as User | undefined
+    if (!user) {
+        return res.status(400).json({
+            code: 400,
+            message: '用户未找到',
+        })
+    }
+
+    try {
+        if (await argon2.verify(user.password, newPassword)) {
+            return res.status(400).json({
+                code: 400,
+                message: '新密码与旧密码相等',
+            })
+        }
+    } catch (error) {
+        console.error('Error hashing password:', error)
+        res.status(500).json({
+            code: 500,
+            message: '服务器错误',
+        })
+    }
+
+    try {
+        const hashedPassword = await argon2.hash(newPassword)
+        updatePassword.run(hashedPassword, email)
+        deleteVerifyCode.run(email)
+        return res.status(200).json({
+            code: 200,
+            message: '密码修改成功',
+        })
+    } catch (error) {
+        console.error('Error hashing password or database:', error)
+        return res.status(500).json({
+            code: 500,
+            message: '服务器错误',
+        })
+    }
 })
 
 export default authRouter

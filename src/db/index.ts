@@ -19,6 +19,7 @@ db.exec(`
     );
     CREATE TABLE IF NOT EXISTS verifyCode(
         email TEXT PRIMARY KEY,
+        type TEXT,
         code INTEGER,
         getTime INTEGER
     );
@@ -43,10 +44,10 @@ export const findUser: Statement = db.prepare(`
     WHERE email = ?;
 `)
 
-/** .run(email,code,getTime) */
+/** .run(email,type,code,getTime) */
 export const setVerifyCode: Statement = db.prepare(`
-    INSERT INTO verifyCode(email,code,getTime)
-    VALUES (?,?,?);
+    INSERT INTO verifyCode(email,type,code,getTime)
+    VALUES (?,?,?,?);
 `)
 /** .get(email) */
 export const isSent: Statement = db.prepare(`
@@ -56,6 +57,12 @@ export const isSent: Statement = db.prepare(`
 /** .run(email) */
 export const deleteVerifyCode: Statement = db.prepare(`
     DELETE FROM verifyCode
+    WHERE email = ?;
+`)
+/** .run(newPassword,email) */
+export const updatePassword: Statement = db.prepare(`
+    UPDATE users
+    SET password = ?
     WHERE email = ?;
 `)
 

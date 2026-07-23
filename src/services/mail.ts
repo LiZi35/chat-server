@@ -14,13 +14,14 @@ const transporter = nodemailer.createTransport({
     },
 })
 
-export async function sendVerifyCodeMail(toMail: string, code: number) {
+export async function sendVerifyCodeMail(toMail: string, type: string, code: number) {
     const template = await fs.readFile('src/template/mail_code.html', 'utf8')
     const html = template
         .split(/\r?\n/)
         .filter((line) => !line.includes('write by ChatGPT'))
         .join('\n')
         .replace('{{CODE}}', code.toString())
+        .replace('{{type}}', type)
         .replace('{{EXPIRE}}', '5')
         .replace('{{APP_NAME}}', 'simple-chatroom')
         .replace('{{YEAR}}', new Date().getFullYear().toString())

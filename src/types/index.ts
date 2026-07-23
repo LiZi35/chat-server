@@ -13,6 +13,7 @@ export interface Message {
 }
 export interface VerifyCodeType {
     email: string
+    type: string
     code: number
     getTime: number
 }
