@@ -25,11 +25,20 @@ cp .env.example .env
 # 后端的端口
 PORT='3000'
 # JWT密钥，使用随机字符填写
-JWT_SECRET='abcdefg123456higklmn'
-# session密钥，使用随机字符填写
-EXPRESS_SESSION_SECRET='abcdefg123456higklmn'
+JWT_SECRET='abcdefg123456'
 # CORS源,填写前端运行的地址
 CORS_ORIGIN='https://example.com'
+
+# 邮箱的服务器地址，例如：smtp.163.com
+MAIL_HOST='smtp.163.com'
+# 邮箱地址的端口，一般为465
+MAIL_PORT=465
+# 邮箱的名称，例如example@example.com
+MAIL_USER='example@example.com'
+# 邮箱的密码，请从邮箱官网中启用SMTP并获取填写授权码
+MAIL_PASS='1234567abcdefg'
+# 发送邮件时发件人的名称，不填则默认为simple-chatroom
+MAIL_SENDER='chatroom'
 ```
 
 安装依赖：
