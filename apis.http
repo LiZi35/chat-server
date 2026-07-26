@@ -1,0 +1,40 @@
+### 登录账号
+# @no-cookie-jar
+POST http://localhost:3000/login
+Content-Type: application/json
+
+{
+  "email": "thelizi35@163.com",
+  "password": "aaa"
+}
+
+### 注册账号
+# @no-cookie-jar
+POST http://127.0.0.1:3000/register
+Content-Type: application/json
+
+{
+  "email": "thelizi35@163.com",
+  "password": "aaa",
+  "nickname": "aaa",
+  "code": "828330"
+}
+
+### 获取验证码
+POST http://localhost:3000/sendVerifyCode
+Content-Type: application/json
+
+{
+  "type":"register",
+  "email": "thelizi35@163.com"
+}
+
+### 重置密码
+POST http://localhost:3000/forgetPassword
+Content-Type: application/json
+
+{
+  "email": "thelizi35@163.com",
+  "verifyCode": "230014",
+  "newPassword": "aaa"
+}
