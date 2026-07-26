@@ -21,6 +21,7 @@ export const RUN_ENV = process.env.NODE_ENV
 export const PORT = Number(process.env.PORT)
 export const SECRET = process.env.JWT_SECRET
 export const CORS_ORIGIN = process.env.CORS_ORIGIN
+export const TRUST_PROXY = Number(process.env.TRUST_PROXY || 0)
 
 export const MAIL_SENDER = process.env.MAIL_SENDER || 'simple-chatroom'
 

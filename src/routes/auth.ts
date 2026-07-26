@@ -65,6 +65,7 @@ authRouter.post('/login', async (req, res) => {
 
     res.cookie('token', token, {
         httpOnly: true,
+        secure: req.secure,
         sameSite: 'lax',
         maxAge: 1000 * 60 * 60 * 24 * 7, // 7d
     }).json({
@@ -141,6 +142,7 @@ authRouter.post('/register', async (req, res) => {
 
             res.cookie('token', token, {
                 httpOnly: true,
+                secure: req.secure,
                 sameSite: 'lax',
                 maxAge: 1000 * 60 * 60 * 24 * 7, // 7d
             })

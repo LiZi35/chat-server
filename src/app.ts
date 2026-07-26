@@ -5,7 +5,7 @@ import { rateLimit } from 'express-rate-limit'
 import { Server } from 'socket.io'
 import { createServer } from 'node:http'
 import cors from 'cors'
-import { PORT, CORS_ORIGIN, RUN_ENV } from './config/env.js'
+import { PORT, CORS_ORIGIN, RUN_ENV, TRUST_PROXY } from './config/env.js'
 import authRouter from './routes/auth.js'
 import { setupSocket } from './socket/index.js'
 
@@ -19,6 +19,10 @@ const io = new Server(server, {
     },
 })
 
+if (TRUST_PROXY > 0) {
+    app.set('trust proxy', TRUST_PROXY)
+}
+
 const limiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 100,
@@ -28,6 +32,7 @@ const limiter = rateLimit({
     ipv6Subnet: 56,
 })
 
+app.use(limiter)
 app.use(express.json())
 if (RUN_ENV === 'production') {
     app.use(helmet())
@@ -38,7 +43,6 @@ if (RUN_ENV === 'production') {
         })
     )
 }
-app.use(limiter)
 app.use(cors({ origin: CORS_ORIGIN, credentials: true }))
 app.use(cookieParser())
 
