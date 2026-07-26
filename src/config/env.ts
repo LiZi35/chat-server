@@ -1,5 +1,9 @@
 import 'dotenv/config'
 
+if (process.env.NODE_ENV !== 'development' && process.env.NODE_ENV !== 'production') {
+    throw new Error('缺少运行环境，请使用pnpm run dev/start运行')
+}
+
 if (
     !process.env.PORT ||
     !process.env.JWT_SECRET ||
@@ -11,6 +15,8 @@ if (
 ) {
     throw new Error('.env缺少配置')
 }
+
+export const RUN_ENV = process.env.NODE_ENV
 
 export const PORT = Number(process.env.PORT)
 export const SECRET = process.env.JWT_SECRET
