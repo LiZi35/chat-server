@@ -3,7 +3,6 @@ import 'dotenv/config'
 if (
     !process.env.PORT ||
     !process.env.JWT_SECRET ||
-    !process.env.EXPRESS_SESSION_SECRET ||
     !process.env.CORS_ORIGIN ||
     !process.env.MAIL_HOST ||
     !process.env.MAIL_PORT ||

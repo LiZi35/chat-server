@@ -124,7 +124,7 @@ authRouter.post('/register', async (req, res) => {
             nickname: nickname,
         }
 
-        addUser.run(newUser.id, email, await argon2.hash(password), nickname)
+        addUser.run(newUser.id, email, newUser.password, nickname)
 
         try {
             // jwt签名
@@ -170,8 +170,8 @@ authRouter.post('/register', async (req, res) => {
 
 // 发送验证码
 authRouter.post('/sendVerifyCode', async (req, res) => {
-    if (typeof req.body.email !== 'string' || !req.body.type) {
-        res.status(400).json({
+    if (!req.body.email || !req.body.type) {
+        return res.status(400).json({
             code: 400,
             message: '未提供必要参数',
         })
@@ -228,8 +228,8 @@ authRouter.post('/sendVerifyCode', async (req, res) => {
     })(type)
 
     try {
-        setVerifyCode.run(email, type, code, new Date().getTime())
         await sendVerifyCodeMail(email, sendType, code)
+        setVerifyCode.run(email, type, code, new Date().getTime())
     } catch (error) {
         return res.status(500).json({
             code: 500,
@@ -294,7 +294,7 @@ authRouter.post('/forgetPassword', async (req, res) => {
         }
     } catch (error) {
         console.error('Error hashing password:', error)
-        res.status(500).json({
+        return res.status(500).json({
             code: 500,
             message: '服务器错误',
         })

@@ -9,7 +9,7 @@ export interface Message {
     senderId: string
     senderNickname: string
     content: string
-    date: Date
+    date: number
 }
 export interface VerifyCodeType {
     email: string
