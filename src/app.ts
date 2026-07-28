@@ -1,4 +1,9 @@
-import express from 'express'
+import express, {
+    type Request,
+    type Response,
+    type NextFunction,
+    type ErrorRequestHandler,
+} from 'express'
 import cookieParser from 'cookie-parser'
 import helmet from 'helmet'
 import { rateLimit } from 'express-rate-limit'
@@ -47,6 +52,21 @@ app.use(cors({ origin: CORS_ORIGIN, credentials: true }))
 app.use(cookieParser())
 
 app.use(authRouter)
+
+app.use((req, res, next) => {
+    res.status(404).json({
+        code: 404,
+        message: '接口不存在',
+    })
+})
+
+app.use((error: ErrorRequestHandler, req: Request, res: Response, next: NextFunction) => {
+    console.error(error)
+    res.status(500).json({
+        code: 500,
+        message: '服务器错误',
+    })
+})
 
 setupSocket(io)
 
