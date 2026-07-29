@@ -2,7 +2,6 @@ import { Router } from 'express'
 import jwt from 'jsonwebtoken'
 import { v4 as uuidv4 } from 'uuid'
 import * as argon2 from 'argon2'
-import validator from 'validator'
 import crypto from 'node:crypto'
 import { SECRET } from '../config/env.js'
 import {
@@ -15,19 +14,30 @@ import {
 } from '../db/index.js'
 import type { User, VerifyCodeType } from '../types/index.ts'
 import { sendVerifyCodeMail } from '../services/mail.js'
+import {
+    forgetPasswordDataSchema,
+    loginDataSchema,
+    registerDataSchema,
+    sendVerifyCodeDataSchema,
+} from '../schema/index.js'
+import { z } from 'zod'
 
 const authRouter: ReturnType<typeof Router> = Router()
 
 // 登录
 authRouter.post('/login', async (req, res) => {
-    const { email, password } = req.body || {}
+    const result = loginDataSchema.safeParse(req.body)
 
-    if (!email || !password) {
+    if (!result.success) {
         return res.status(400).json({
             code: 400,
-            message: '邮箱或密码不能为空',
+            message: '输入格式不合法',
+            errorTree: z.treeifyError(result.error),
         })
     }
+
+    const { email, password } = result.data
+
     const targetUser = findUser.get(email) as User | undefined
     if (!targetUser) {
         return res.status(401).json({
@@ -79,14 +89,18 @@ authRouter.post('/login', async (req, res) => {
 
 // 注册
 authRouter.post('/register', async (req, res) => {
-    const { email, password, nickname, code } = req.body || {}
+    const result = registerDataSchema.safeParse(req.body)
 
-    if (!email || !password || !nickname || !code) {
+    if (!result.success) {
         return res.status(400).json({
             code: 400,
-            message: '邮箱、密码、验证码或昵称不能为空',
+            message: '输入格式不合法',
+            errorTree: z.treeifyError(result.error),
         })
     }
+
+    const { email, password, nickname, code } = result.data
+
     const isExist = findUser.get(email) as User | undefined
     if (isExist) {
         return res.status(401).json({
@@ -172,28 +186,17 @@ authRouter.post('/register', async (req, res) => {
 
 // 发送验证码
 authRouter.post('/sendVerifyCode', async (req, res) => {
-    if (!req.body.email || !req.body.type) {
+    const result = sendVerifyCodeDataSchema.safeParse(req.body)
+
+    if (!result.success) {
         return res.status(400).json({
             code: 400,
-            message: '未提供必要参数',
+            message: '输入格式不合法',
+            errorTree: z.treeifyError(result.error),
         })
     }
 
-    const { email, type } = req.body
-
-    if (type !== 'register' && type !== 'forgetPassword') {
-        return res.status(400).json({
-            code: 400,
-            message: '非法的请求参数',
-        })
-    }
-
-    if (!validator.isEmail(email)) {
-        return res.status(400).json({
-            code: 400,
-            message: '邮箱格式不正确',
-        })
-    }
+    const { email, type } = result.data
 
     if (type === 'register') {
         const verifyUser = findUser.get(email)
@@ -247,14 +250,17 @@ authRouter.post('/sendVerifyCode', async (req, res) => {
 
 // 忘记密码
 authRouter.post('/forgetPassword', async (req, res) => {
-    if (!req.body.email || !req.body.verifyCode || !req.body.newPassword) {
+    const result = forgetPasswordDataSchema.safeParse(req.body)
+
+    if (!result.success) {
         return res.status(400).json({
             code: 400,
-            message: '未提供邮箱，密码，验证码',
+            message: '输入格式不合法',
+            errorTree: z.treeifyError(result.error),
         })
     }
 
-    const { email, verifyCode, newPassword } = req.body
+    const { email, verifyCode, newPassword } = result.data
 
     const dataVerifyCode = isSent.get(email) as VerifyCodeType | undefined
 
