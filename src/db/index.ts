@@ -8,7 +8,8 @@ db.exec(`
         id TEXT PRIMARY KEY,
         email TEXT UNIQUE,
         password TEXT,
-        nickname TEXT
+        nickname TEXT,
+        token_invalid_before INTEGER
     );
     CREATE TABLE IF NOT EXISTS messages(
         messageId INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -33,14 +34,14 @@ export const addMessages: Statement = db.prepare(`
     INSERT INTO messages (senderId,senderNickname,content,date)
     VALUES (?,?,?,?);
 `)
-/** .run(id,email,password,nickname) */
+/** .run(id,email,password,nickname,token_invalid_before) */
 export const addUser: Statement = db.prepare(`
-    INSERT INTO users (id,email,password,nickname)
-    VALUES (?,?,?,?);
+    INSERT INTO users (id,email,password,nickname,token_invalid_before)
+    VALUES (?,?,?,?,?);
 `)
 /** .get(email) */
 export const findUser: Statement = db.prepare(`
-    SELECT id,email,password,nickname FROM users
+    SELECT id,email,password,nickname,token_invalid_before FROM users
     WHERE email = ?;
 `)
 
@@ -59,10 +60,10 @@ export const deleteVerifyCode: Statement = db.prepare(`
     DELETE FROM verifyCode
     WHERE email = ?;
 `)
-/** .run(newPassword,email) */
+/** .run(newPassword,token_invalid_before,email) */
 export const updatePassword: Statement = db.prepare(`
     UPDATE users
-    SET password = ?
+    SET password = ?,token_invalid_before=?
     WHERE email = ?;
 `)
 

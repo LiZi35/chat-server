@@ -18,6 +18,15 @@ export function verifyUser(userToken: string | undefined): {
             if (userInfo.id && userInfo.email) {
                 const targetUser = findUser.get(userInfo.email) as User | undefined
                 if (targetUser) {
+                    if (
+                        targetUser.token_invalid_before &&
+                        userInfo.iat * 1000 <= Number(targetUser.token_invalid_before)
+                    ) {
+                        return {
+                            verified: false,
+                            message: 'EXPIRED_USER',
+                        }
+                    }
                     return {
                         verified: true,
                         message: 'VERIFIED_USER',

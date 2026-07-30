@@ -3,6 +3,7 @@ export interface User {
     email: string
     password: string
     nickname: string
+    token_invalid_before: number
 }
 export interface Message {
     messageId: number

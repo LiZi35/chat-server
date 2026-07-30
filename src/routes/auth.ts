@@ -137,9 +137,10 @@ authRouter.post('/register', async (req, res) => {
             email: email,
             password: await argon2.hash(password),
             nickname: nickname,
+            token_invalid_before: new Date().getTime(),
         }
 
-        addUser.run(newUser.id, email, newUser.password, nickname)
+        addUser.run(newUser.id, email, newUser.password, nickname, newUser.token_invalid_before)
 
         try {
             // jwt签名
@@ -310,7 +311,7 @@ authRouter.post('/forgetPassword', async (req, res) => {
 
     try {
         const hashedPassword = await argon2.hash(newPassword)
-        updatePassword.run(hashedPassword, email)
+        updatePassword.run(hashedPassword, new Date().getTime(), email)
         deleteVerifyCode.run(email)
         return res.status(200).json({
             code: 200,
