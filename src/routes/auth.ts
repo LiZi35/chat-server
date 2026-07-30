@@ -103,8 +103,8 @@ authRouter.post('/register', async (req, res) => {
 
     const isExist = findUser.get(email) as User | undefined
     if (isExist) {
-        return res.status(401).json({
-            code: 401,
+        return res.status(409).json({
+            code: 409,
             message: '该账号已存在',
         })
     }
@@ -117,14 +117,14 @@ authRouter.post('/register', async (req, res) => {
         })
     }
     if (new Date().getTime() - verifyCode.getTime > 1000 * 60 * 5) {
-        return res.status(401).json({
-            code: 401,
+        return res.status(400).json({
+            code: 400,
             message: '验证码已过期',
         })
     }
     if (Number(verifyCode.code) !== Number(code)) {
-        return res.status(401).json({
-            code: 401,
+        return res.status(400).json({
+            code: 400,
             message: '验证码错误',
         })
     }
@@ -202,8 +202,8 @@ authRouter.post('/sendVerifyCode', async (req, res) => {
     if (type === 'register') {
         const verifyUser = findUser.get(email)
         if (verifyUser) {
-            return res.status(401).json({
-                code: 400,
+            return res.status(409).json({
+                code: 409,
                 message: '用户已存在',
             })
         }
@@ -273,8 +273,8 @@ authRouter.post('/forgetPassword', async (req, res) => {
     }
 
     if (new Date().getTime() - dataVerifyCode.getTime > 1000 * 60 * 5) {
-        return res.status(422).json({
-            code: 422,
+        return res.status(400).json({
+            code: 400,
             message: '验证码已过期',
         })
     }
