@@ -1,6 +1,6 @@
 import nodemailer from 'nodemailer'
 import fs from 'node:fs/promises'
-import { MAIL_HOST, MAIL_PASS, MAIL_PORT, MAIL_SENDER, MAIL_USER } from '../config/env.js'
+import { MAIL_HOST, MAIL_PASS, MAIL_PORT, MAIL_SENDER, MAIL_USER, RUN_ENV } from '../config/env.js'
 
 const address = MAIL_SENDER + ' <' + MAIL_USER + '>'
 
@@ -15,6 +15,10 @@ const transporter = nodemailer.createTransport({
 })
 
 export async function sendVerifyCodeMail(toMail: string, type: string, code: number) {
+    if (RUN_ENV == 'development') {
+        console.log('the verify code is', code)
+        return
+    }
     const template = await fs.readFile('src/template/mail_code.html', 'utf8')
     const html = template
         .split(/\r?\n/)

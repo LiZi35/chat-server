@@ -20,6 +20,7 @@ import {
     registerDataSchema,
     sendVerifyCodeDataSchema,
 } from '../schema/index.js'
+import { getTokenInvalidBefore } from '../utils/index.js'
 
 const authRouter: ReturnType<typeof Router> = Router()
 
@@ -125,6 +126,7 @@ authRouter.post('/register', async (req, res) => {
         return res.status(400).json({
             code: 400,
             message: '验证码错误',
+            issues: [{ path: ['verifyCode'], code: 'INVALID_VERIFY_CODE', message: '验证码错误' }],
         })
     }
 
@@ -136,7 +138,7 @@ authRouter.post('/register', async (req, res) => {
             email: email,
             password: await argon2.hash(password),
             nickname: nickname,
-            token_invalid_before: new Date().getTime(),
+            token_invalid_before: getTokenInvalidBefore(),
         }
 
         addUser.run(newUser.id, email, newUser.password, nickname, newUser.token_invalid_before)
@@ -198,12 +200,23 @@ authRouter.post('/sendVerifyCode', async (req, res) => {
 
     const { email, type } = result.data
 
+    const verifyUser = findUser.get(email)
+
     if (type === 'register') {
-        const verifyUser = findUser.get(email)
         if (verifyUser) {
             return res.status(409).json({
                 code: 409,
                 message: '用户已存在',
+                issues: [{ path: ['email'], code: 'EXIST_USER', message: '用户已存在' }],
+            })
+        }
+    }
+    if (type === 'forgetPassword') {
+        if (!verifyUser) {
+            return res.status(409).json({
+                code: 409,
+                message: '用户不存在',
+                issues: [{ path: ['email'], code: 'EXIST_USER', message: '用户不存在' }],
             })
         }
     }
@@ -234,7 +247,7 @@ authRouter.post('/sendVerifyCode', async (req, res) => {
 
     try {
         await sendVerifyCodeMail(email, sendType, code)
-        setVerifyCode.run(email, type, code, new Date().getTime())
+        setVerifyCode.run(email, type, code, getTokenInvalidBefore())
     } catch (error) {
         return res.status(500).json({
             code: 500,

@@ -30,8 +30,8 @@ export const forgetPasswordDataSchema = z.object({
     verifyCode: z.coerce
         .number('验证码需要为数字')
         .int('验证码需要为整数')
-        .min(6, '验证码为6位数字')
-        .max(6, '验证码为6位数字'),
+        .min(100000, '验证码为6位数字')
+        .max(999999, '验证码为6位数字'),
     newPassword: z
         .string('密码需要为字符串')
         .min(8, '密码需要大于8个字符')
