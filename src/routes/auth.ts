@@ -20,7 +20,6 @@ import {
     registerDataSchema,
     sendVerifyCodeDataSchema,
 } from '../schema/index.js'
-import { z } from 'zod'
 
 const authRouter: ReturnType<typeof Router> = Router()
 
@@ -32,7 +31,7 @@ authRouter.post('/login', async (req, res) => {
         return res.status(400).json({
             code: 400,
             message: '输入格式不合法',
-            errorTree: z.treeifyError(result.error),
+            issues: result.error.issues,
         })
     }
 
@@ -95,7 +94,7 @@ authRouter.post('/register', async (req, res) => {
         return res.status(400).json({
             code: 400,
             message: '输入格式不合法',
-            errorTree: z.treeifyError(result.error),
+            issues: result.error.issues,
         })
     }
 
@@ -193,7 +192,7 @@ authRouter.post('/sendVerifyCode', async (req, res) => {
         return res.status(400).json({
             code: 400,
             message: '输入格式不合法',
-            errorTree: z.treeifyError(result.error),
+            issues: result.error.issues,
         })
     }
 
@@ -257,7 +256,7 @@ authRouter.post('/forgetPassword', async (req, res) => {
         return res.status(400).json({
             code: 400,
             message: '输入格式不合法',
-            errorTree: z.treeifyError(result.error),
+            issues: result.error.issues,
         })
     }
 
