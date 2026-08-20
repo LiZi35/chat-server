@@ -12,7 +12,7 @@ import {
     deleteVerifyCode,
     updatePassword,
 } from '../db/index.js'
-import type { User, VerifyCodeType } from '../types/index.ts'
+import type { User, VerifyCodeType } from '../types/index.js'
 import { sendVerifyCodeMail } from '../services/mail.js'
 import {
     forgetPasswordDataSchema,
@@ -216,7 +216,7 @@ authRouter.post('/sendVerifyCode', async (req, res) => {
             return res.status(409).json({
                 code: 409,
                 message: '用户不存在',
-                issues: [{ path: ['email'], code: 'EXIST_USER', message: '用户不存在' }],
+                issues: [{ path: ['email'], code: 'USER_NOT_FOUND', message: '用户不存在' }],
             })
         }
     }
@@ -247,7 +247,7 @@ authRouter.post('/sendVerifyCode', async (req, res) => {
 
     try {
         await sendVerifyCodeMail(email, sendType, code)
-        setVerifyCode.run(email, type, code, getTokenInvalidBefore())
+        setVerifyCode.run(email, type, code, new Date().getTime())
     } catch (error) {
         return res.status(500).json({
             code: 500,
@@ -323,7 +323,7 @@ authRouter.post('/forgetPassword', async (req, res) => {
 
     try {
         const hashedPassword = await argon2.hash(newPassword)
-        updatePassword.run(hashedPassword, new Date().getTime(), email)
+        updatePassword.run(hashedPassword, getTokenInvalidBefore(), email)
         deleteVerifyCode.run(email)
         return res.status(200).json({
             code: 200,

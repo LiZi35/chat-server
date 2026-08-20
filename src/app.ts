@@ -1,9 +1,4 @@
-import express, {
-    type Request,
-    type Response,
-    type NextFunction,
-    type ErrorRequestHandler,
-} from 'express'
+import express, { type Request, type Response, type NextFunction } from 'express'
 import cookieParser from 'cookie-parser'
 import helmet from 'helmet'
 import { rateLimit } from 'express-rate-limit'
@@ -60,7 +55,7 @@ app.use((req, res, next) => {
     })
 })
 
-app.use((error: ErrorRequestHandler, req: Request, res: Response, next: NextFunction) => {
+app.use((error: unknown, req: Request, res: Response, next: NextFunction) => {
     console.error(error)
     res.status(500).json({
         code: 500,

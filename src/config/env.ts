@@ -1,7 +1,7 @@
 import 'dotenv/config'
 
 if (process.env.NODE_ENV !== 'development' && process.env.NODE_ENV !== 'production') {
-    throw new Error('缺少运行环境，请使用pnpm run dev/start运行')
+    throw new Error('缺少运行环境变量，请使用pnpm run dev/start运行')
 }
 
 if (

@@ -26,6 +26,7 @@ db.exec(`
     );
 `)
 
+/** .all() */
 export const getMessages: Statement = db.prepare(`
     SELECT * FROM messages;
 `)
@@ -66,5 +67,32 @@ export const updatePassword: Statement = db.prepare(`
     SET password = ?,token_invalid_before=?
     WHERE email = ?;
 `)
+/** .all(messageId,limit) */
+export const getAfterMessage: Statement = db.prepare(`
+    SELECT * FROM messages
+    WHERE messageId > ?
+    ORDER BY messageId ASC
+    LIMIT ?;
+`)
+/** .all(messageId,limit) */
+export const getBeforeMessage: Statement = db.prepare(`
+    SELECT * FROM messages
+    WHERE messageId < ?
+    ORDER BY messageId DESC 
+    LIMIT ?;
+`)
+/** .get() */
+export const getLatestMessageId: Statement = db.prepare(`
+    SELECT max(messageId) AS "LatestMessageId" FROM messages
+`)
+/** .get(messageId) */
+export const getAMessage: Statement = db.prepare(`
+    SELECT * FROM messages
+    WHERE messageId = ?
+`)
+export function getLastMessageIdNumber() {
+    const result = getLatestMessageId.get() as { LatestMessageId: number | null }
+    return result.LatestMessageId
+}
 
 export default db
