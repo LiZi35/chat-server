@@ -9,6 +9,8 @@ import {
     getAMessage,
     getLastMessageIdNumber,
 } from '../db/index.js'
+import { getLimitMessagesDataSchema, sendMessageDataSchema } from '../schema/index.js'
+import { getUserToken } from '../utils/index.js'
 
 export function setupSocket(io: Server) {
     io.use((socket, next) => {
@@ -25,55 +27,73 @@ export function setupSocket(io: Server) {
     io.on('connection', (socket) => {
         // console.log('connected')
         // 接受消息
-        socket.on('sendMessage', (content: string) => {
-            if (socket.data.user) {
-                addMessages.run(
-                    socket.data.user.id,
-                    socket.data.user.nickname,
-                    content,
-                    new Date().getTime()
-                )
-                const res = {
-                    status: 200,
-                    message: '新消息',
-                    newMessages: getAMessage.get(getLastMessageIdNumber()),
+        socket.on('sendMessage', (dataContent: string) => {
+            if (verifyUser(getUserToken(socket.handshake.headers.cookie)).verified) {
+                const result = sendMessageDataSchema.safeParse({ content: dataContent })
+                if (result.success) {
+                    const { content } = result.data
+                    addMessages.run(
+                        socket.data.user.id,
+                        socket.data.user.nickname,
+                        content,
+                        new Date().getTime()
+                    )
+                    const res = {
+                        status: 200,
+                        message: '新消息',
+                        newMessages: getAMessage.get(getLastMessageIdNumber()),
+                    }
+                    io.emit('newMessage', res)
                 }
-                io.emit('newMessage', res)
             } else {
                 socket.emit('error', '未认证')
             }
         })
 
-        socket.on('getAfterMessage', (messageId: number, limit: number) => {
-            if (socket.data.user) {
-                const result = getAfterMessage.all(messageId, limit)
-                socket.emit('AfterMessagesList', {
-                    status: 200,
-                    messageId: messageId,
-                    limit: limit,
-                    messageList: result,
+        socket.on('getAfterMessage', (dataMessageId: number, dataLimit: number) => {
+            if (verifyUser(getUserToken(socket.handshake.headers.cookie)).verified) {
+                const dataResult = getLimitMessagesDataSchema.safeParse({
+                    messageId: dataMessageId,
+                    limit: dataLimit,
                 })
+                if (dataResult.success) {
+                    const { messageId, limit } = dataResult.data
+                    const result = getAfterMessage.all(messageId, limit)
+                    socket.emit('AfterMessagesList', {
+                        status: 200,
+                        messageId: messageId,
+                        limit: limit,
+                        messageList: result,
+                    })
+                }
             } else {
                 socket.emit('error', '未认证')
             }
         })
 
-        socket.on('getBeforeMessage', (messageId: number, limit: number) => {
-            if (socket.data.user) {
-                const result = getBeforeMessage.all(messageId, limit)
-                socket.emit('BeforeMessagesList', {
-                    status: 200,
-                    messageId: messageId,
-                    limit: limit,
-                    messageList: result,
+        socket.on('getBeforeMessage', (dataMessageId: number, dataLimit: number) => {
+            if (verifyUser(getUserToken(socket.handshake.headers.cookie)).verified) {
+                const dataResult = getLimitMessagesDataSchema.safeParse({
+                    messageId: dataMessageId,
+                    limit: dataLimit,
                 })
+                if (dataResult.success) {
+                    const { messageId, limit } = dataResult.data
+                    const result = getBeforeMessage.all(messageId, limit)
+                    socket.emit('BeforeMessagesList', {
+                        status: 200,
+                        messageId: messageId,
+                        limit: limit,
+                        messageList: result,
+                    })
+                }
             } else {
                 socket.emit('error', '未认证')
             }
         })
 
         socket.on('getLatestMessageId', () => {
-            if (socket.data.user) {
+            if (verifyUser(getUserToken(socket.handshake.headers.cookie)).verified) {
                 const result = getLatestMessageId.get() as { LatestMessageId: number | null }
                 if (result.LatestMessageId) {
                     socket.emit('LatestMessageId', result.LatestMessageId)

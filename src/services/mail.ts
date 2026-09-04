@@ -1,6 +1,8 @@
 import nodemailer from 'nodemailer'
 import fs from 'node:fs/promises'
 import { MAIL_HOST, MAIL_PASS, MAIL_PORT, MAIL_SENDER, MAIL_USER, RUN_ENV } from '../config/env.js'
+import { fileURLToPath } from 'node:url'
+import path from 'node:path'
 
 const address = MAIL_SENDER + ' <' + MAIL_USER + '>'
 
@@ -19,7 +21,21 @@ export async function sendVerifyCodeMail(toMail: string, type: string, code: num
         console.log('the verify code is', code)
         return
     }
-    const template = await fs.readFile('src/template/mail_code.html', 'utf8')
+    console.log(
+        path.join(
+            path.dirname(path.dirname(fileURLToPath(import.meta.url))),
+            'template',
+            'mail_code.html'
+        )
+    )
+    const template = await fs.readFile(
+        path.join(
+            path.dirname(path.dirname(fileURLToPath(import.meta.url))),
+            'template/',
+            'mail_code.html'
+        ),
+        'utf8'
+    )
     const html = template
         .split(/\r?\n/)
         .filter((line) => !line.includes('write by ChatGPT'))

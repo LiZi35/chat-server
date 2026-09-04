@@ -249,6 +249,7 @@ authRouter.post('/sendVerifyCode', async (req, res) => {
         await sendVerifyCodeMail(email, sendType, code)
         setVerifyCode.run(email, type, code, new Date().getTime())
     } catch (error) {
+        console.error(error)
         return res.status(500).json({
             code: 500,
             message: '服务器异常',
