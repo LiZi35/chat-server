@@ -17,4 +17,5 @@ export interface VerifyCodeType {
     type: string
     code: number
     getTime: number
+    failed: number
 }

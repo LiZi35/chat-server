@@ -11,6 +11,7 @@ import {
     isSent,
     deleteVerifyCode,
     updatePassword,
+    updateVerifyCodeFail,
 } from '../db/index.js'
 import type { User, VerifyCodeType } from '../types/index.js'
 import { sendVerifyCodeMail } from '../services/mail.js'
@@ -122,7 +123,15 @@ authRouter.post('/register', async (req, res) => {
             message: '验证码已过期',
         })
     }
+    if (verifyCode.failed >= 5) {
+        deleteVerifyCode.run(verifyCode.email)
+        return res.status(400).json({
+            code: 400,
+            message: '验证码尝试次数过多，请重新获取',
+        })
+    }
     if (Number(verifyCode.code) !== Number(code)) {
+        updateVerifyCodeFail.run(verifyCode.failed + 1, verifyCode.email)
         return res.status(400).json({
             code: 400,
             message: '验证码错误',
@@ -285,6 +294,14 @@ authRouter.post('/forgetPassword', async (req, res) => {
         })
     }
 
+    if (dataVerifyCode.failed >= 5) {
+        deleteVerifyCode.run(dataVerifyCode.email)
+        return res.status(400).json({
+            code: 400,
+            message: '验证码尝试次数过多，请重新获取',
+        })
+    }
+
     if (new Date().getTime() - dataVerifyCode.getTime > 1000 * 60 * 5) {
         return res.status(400).json({
             code: 400,
@@ -293,6 +310,7 @@ authRouter.post('/forgetPassword', async (req, res) => {
     }
 
     if (Number(verifyCode) !== Number(dataVerifyCode.code)) {
+        updateVerifyCodeFail.run(dataVerifyCode.failed + 1, dataVerifyCode.email)
         return res.status(400).json({
             code: 400,
             message: '验证码不正确',

@@ -22,7 +22,8 @@ db.exec(`
         email TEXT PRIMARY KEY,
         type TEXT,
         code INTEGER,
-        getTime INTEGER
+        getTime INTEGER,
+        failed INTEGER DEFAULT 0
     );
 `)
 
@@ -94,5 +95,12 @@ export function getLastMessageIdNumber() {
     const result = getLatestMessageId.get() as { LatestMessageId: number | null }
     return result.LatestMessageId
 }
+
+/** .run(failed,email) */
+export const updateVerifyCodeFail: Statement = db.prepare(`
+    UPDATE verifyCode
+    SET failed = ?
+    WHERE email = ?
+`)
 
 export default db
