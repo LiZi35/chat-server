@@ -44,9 +44,17 @@ export function setupSocket(io: Server) {
                         newMessages: getAMessage.get(getLastMessageIdNumber()),
                     }
                     io.emit('newMessage', res)
+                } else {
+                    socket.emit('error', {
+                        shouldOut: false,
+                        message: '参数错误' + result.error.message,
+                    })
                 }
             } else {
-                socket.emit('error', '未认证')
+                socket.emit('error', {
+                    shouldOut: true,
+                    message: '未认证',
+                })
             }
         })
 
@@ -65,9 +73,17 @@ export function setupSocket(io: Server) {
                         limit: limit,
                         messageList: result,
                     })
+                } else {
+                    socket.emit('error', {
+                        shouldOut: false,
+                        message: '参数错误' + dataResult.error.message,
+                    })
                 }
             } else {
-                socket.emit('error', '未认证')
+                socket.emit('error', {
+                    shouldOut: true,
+                    message: '未认证',
+                })
             }
         })
 
@@ -86,9 +102,17 @@ export function setupSocket(io: Server) {
                         limit: limit,
                         messageList: result,
                     })
+                } else {
+                    socket.emit('error', {
+                        shouldOut: false,
+                        message: '参数错误' + dataResult.error.message,
+                    })
                 }
             } else {
-                socket.emit('error', '未认证')
+                socket.emit('error', {
+                    shouldOut: true,
+                    message: '未认证',
+                })
             }
         })
 
@@ -96,15 +120,21 @@ export function setupSocket(io: Server) {
             if (verifyUser(getUserToken(socket.handshake.headers.cookie)).verified) {
                 const result = getLatestMessageId.get() as { LatestMessageId: number | null }
                 if (result.LatestMessageId) {
-                    socket.emit('LatestMessageId', result.LatestMessageId)
+                    socket.emit('LatestMessageId', {
+                        status: 200,
+                        latestMessageId: result.LatestMessageId,
+                    })
                 } else {
                     socket.emit('LatestMessageId', {
                         status: 200,
-                        LatestMessageId: 0,
+                        latestMessageId: 0,
                     })
                 }
             } else {
-                socket.emit('error', '未认证')
+                socket.emit('error', {
+                    shouldOut: true,
+                    message: '未认证',
+                })
             }
         })
     })
