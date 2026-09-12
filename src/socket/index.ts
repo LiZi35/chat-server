@@ -11,6 +11,7 @@ import {
 } from '../db/index.js'
 import { getLimitMessagesDataSchema, sendMessageDataSchema } from '../schema/index.js'
 import { getUserToken } from '../utils/index.js'
+import type { socketError } from '../types/index.js'
 
 export function setupSocket(io: Server) {
     io.use((socket, next) => {
@@ -45,13 +46,15 @@ export function setupSocket(io: Server) {
                     }
                     io.emit('newMessage', res)
                 } else {
-                    socket.emit('error', {
+                    socket.emit('error', <socketError>{
+                        on: 'sendMessage',
                         shouldOut: false,
                         message: '参数错误' + result.error.message,
                     })
                 }
             } else {
-                socket.emit('error', {
+                socket.emit('error', <socketError>{
+                    on: 'sendMessage',
                     shouldOut: true,
                     message: '未认证',
                 })
@@ -74,13 +77,15 @@ export function setupSocket(io: Server) {
                         messageList: result,
                     })
                 } else {
-                    socket.emit('error', {
+                    socket.emit('error', <socketError>{
+                        on: 'getAfterMessage',
                         shouldOut: false,
                         message: '参数错误' + dataResult.error.message,
                     })
                 }
             } else {
-                socket.emit('error', {
+                socket.emit('error', <socketError>{
+                    on: 'getAfterMessage',
                     shouldOut: true,
                     message: '未认证',
                 })
@@ -103,13 +108,15 @@ export function setupSocket(io: Server) {
                         messageList: result,
                     })
                 } else {
-                    socket.emit('error', {
+                    socket.emit('error', <socketError>{
+                        on: 'getBeforeMessage',
                         shouldOut: false,
                         message: '参数错误' + dataResult.error.message,
                     })
                 }
             } else {
-                socket.emit('error', {
+                socket.emit('error', <socketError>{
+                    on: 'getBeforeMessage',
                     shouldOut: true,
                     message: '未认证',
                 })
@@ -131,7 +138,8 @@ export function setupSocket(io: Server) {
                     })
                 }
             } else {
-                socket.emit('error', {
+                socket.emit('error', <socketError>{
+                    on: 'getLatestMessageId',
                     shouldOut: true,
                     message: '未认证',
                 })

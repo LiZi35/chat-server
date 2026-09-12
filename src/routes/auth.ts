@@ -357,4 +357,15 @@ authRouter.post('/forgetPassword', async (req, res) => {
     }
 })
 
+authRouter.post('/logout', (req, res) => {
+    res.clearCookie('token', {
+        httpOnly: true,
+        secure: req.secure,
+        sameSite: 'lax',
+    }).json({
+        status: 200,
+        message: '退出登录',
+    })
+})
+
 export default authRouter

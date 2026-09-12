@@ -19,3 +19,8 @@ export interface VerifyCodeType {
     getTime: number
     failed: number
 }
+export interface socketError {
+    on: 'sendMessage' | 'getBeforeMessage' | 'getAfterMessage' | 'getLatestMessageId'
+    shouldOut: boolean
+    message: string
+}
